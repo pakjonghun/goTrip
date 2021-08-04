@@ -23,6 +23,7 @@ import { UpdateUserExistConfirmMiddleWare } from './auth/middleWare/updateUserEx
 import { GeoModule } from './geo/geo.module';
 import { SocialLoginMiddleWare } from './auth/middleWare/joinSocialLogin.middleWare';
 import { DetailAreaCode } from './trip/entities/detailAreaCode.entity';
+import { PhoneAuthEntity } from './auth/entities/phoneAuth.entity';
 
 @Module({
   imports: [
@@ -38,6 +39,11 @@ import { DetailAreaCode } from './trip/entities/detailAreaCode.entity';
         TOKEN_SECRET: Joi.string().required(),
         MY_EMAIL: Joi.string().required(),
         MAIL_KEY: Joi.string().required(),
+        api: Joi.string().required(),
+        NCP_serviceID: Joi.string().required(),
+        NCP_accessKey: Joi.string().required(),
+        NCP_secretKey: Joi.string().required(),
+        hostPhoneNumber: Joi.string().required(),
       }),
     }),
     TypeOrmModule.forRoot({
@@ -48,6 +54,7 @@ import { DetailAreaCode } from './trip/entities/detailAreaCode.entity';
       password: process.env.DB_PASSWORD,
       database: process.env.DB_DATABASE,
       entities: [
+        PhoneAuthEntity,
         User,
         TripRecord,
         Comment,
