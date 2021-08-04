@@ -34,6 +34,22 @@ export class GeoService {
       }
     }
 
+    // 선택지가 4개를 초과할 시, 4개까지 줄여서 보내주기
+    // 4개 이하일 시, 그냥 보내주기
+    // Array.splice(랜덤시작인덱스, 1개만 제거)[0] 제거한 요소들의 배열을 반환하니 0번째 요소가 뽑은 숫자
+    if (result.length > 4) {
+      const resultWhenOverFour = [];
+      while (resultWhenOverFour.length < 4) {
+        const poppedCourse = result.splice(
+          Math.floor(Math.random() * result.length),
+          1,
+        )[0];
+        resultWhenOverFour.push(poppedCourse);
+      }
+
+      return resultWhenOverFour;
+    }
+
     return result;
   }
 
