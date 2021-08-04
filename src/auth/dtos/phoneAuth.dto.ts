@@ -1,11 +1,8 @@
+import { PickType } from '@nestjs/swagger';
 import { Matches } from 'class-validator';
 import { CommonOutput } from 'src/common/dtos/common.dto';
+import { PhoneAuthEntity } from '../entities/phoneAuth.entity';
 
-export class PhoneAuthDTO {
-  @Matches(/^[0-9]{11}$/i, {
-    message: '휴대폰번호를 형식에 맞게 입력하세요. 예)010-0101-0101',
-  })
-  phoneNumber: string;
-}
+export class PhoneAuthDTO extends PickType(PhoneAuthEntity, ['phoneNumber']) {}
 
 export class PhoneAuthOutput extends CommonOutput {}
