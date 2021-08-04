@@ -88,9 +88,17 @@ export class AuthService {
     const verifyCode = Math.floor(Math.random() * (999999 - 100000)) + 100000;
 
     try {
-      await this.phoneAuth.save(
-        this.phoneAuth.create({ code: verifyCode, phoneNumber }),
-      );
+      let exist = await this.phoneAuth.findOne({ phoneNumber });
+
+      if (!exist) {
+        exist = await this.phoneAuth.save(
+          this.phoneAuth.create({ code: verifyCode, phoneNumber }),
+        );
+      }
+
+      exist.code = verifyCode;
+      await this.phoneAuth.save(exist);
+
       return this.sendPhoneAuthNumber(phoneNumber, verifyCode);
     } catch (e) {
       return commonMessages.commonAuthFail;

@@ -10,6 +10,6 @@ export class PhoneAuthEntity extends CoreEntity {
 
   @IsString({ message: '형식에 맞는 값을 입력하세요' })
   @Matches(/^[0-9]{11}$/i, { message: '휴대폰 번호는 11자리 입니다.' })
-  @Column()
+  @Column({ unique: true })
   phoneNumber: string;
 }
