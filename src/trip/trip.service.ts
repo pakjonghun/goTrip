@@ -2,11 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import axios from 'axios';
 import { GeoService } from 'src/geo/geo.service';
+import internal from 'stream';
 import { Repository } from 'typeorm';
 import { GetCourseProcessOutput } from './dtos/get-course-process.dto';
 import { GetCourseInput, GetCourseOutput } from './dtos/get-course.dto';
 import { AreaCode } from './entities/areacode.entity';
 import { Course } from './entities/course.entity';
+import { DetailAreaCode } from './entities/detailAreaCode.entity';
 import { Location } from './entities/location.entity';
 
 @Injectable()
@@ -18,7 +20,56 @@ export class TripService {
     private readonly locations: Repository<Location>,
     @InjectRepository(AreaCode)
     private readonly area: Repository<AreaCode>,
-  ) {}
+    @InjectRepository(DetailAreaCode)
+    private readonly detailArea: Repository<DetailAreaCode>,
+  ) {
+    this.getAllB();
+  }
+
+  async getAllB() {
+    const all = await this.area.find({});
+    for (let i of all) {
+      const code = i.code;
+      const arrayCode = await this.getB(code);
+      for (let k in arrayCode) {
+        const j = arrayCode[k];
+
+        const areacodeA = i;
+        const insert = await this.detailArea.create({ ...j, areacode: i });
+        await this.detailArea.save(insert);
+      }
+    }
+  }
+
+  async getB(code: number) {
+    const encodeKey =
+      'R1YkIepzkxhj6Ouue%2Fo0BcyXRM89NzjOU2baG8hXDjqv7MyVSxspxUBLzUZOJPISnGgxDg8SaIutpCmhB7OE%2Fg%3D%3D';
+
+    const serviceKey = decodeURIComponent(encodeKey);
+    const data = await axios.get(
+      'http://api.visitkorea.or.kr/openapi/service/rest/KorService/areaCode',
+      {
+        params: {
+          serviceKey,
+          numOfRows: 50,
+          pageNo: 1,
+          MobileOS: 'ETC',
+          MobileApp: 'gotrip',
+          areaCode: code,
+        },
+      },
+    );
+    const {
+      data: {
+        response: {
+          body: {
+            items: { item },
+          },
+        },
+      },
+    } = data;
+    return item;
+  }
 
   async getA() {
     const a = await axios.get('http://localhost:4000/detail/move');

@@ -28,12 +28,6 @@ export class UserController {
   }
 
   @UseGuards(Guard)
-  @Get('me')
-  me(@getUser() user: User): MeOutput {
-    return { ok: true, data: user };
-  }
-
-  @UseGuards(Guard)
   @Post('auth')
   auth(@getUser() user: User, @Body() data: AuthDTO): Promise<AuthOutput> {
     return this.userService.authEmail(user, data);
@@ -62,5 +56,16 @@ export class UserController {
     @Body() data: ConfirmExistDTO,
   ): Promise<ConfirmExistOutput> {
     return this.userService.confirmExist(user, data);
+  }
+
+  @UseGuards(Guard)
+  @Get('me')
+  me(@getUser() user: User): MeOutput {
+    delete user['id'];
+    delete user['socialId'];
+    delete user['refreshToken'];
+    delete user['updatedAt'];
+    delete user['createdAt'];
+    return { ok: true, data: user };
   }
 }
