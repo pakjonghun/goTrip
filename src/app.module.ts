@@ -65,7 +65,7 @@ import { PhoneAuthEntity } from './auth/entities/phoneAuth.entity';
         DetailAreaCode,
       ],
       synchronize: true,
-      logging: true,
+      logging: false,
     }),
     UserModule,
     AuthModule,
