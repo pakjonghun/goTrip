@@ -10,13 +10,10 @@ import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { Response } from 'express';
 
 import * as CryptoJS from 'crypto-js';
-import Swal from 'sweetalert2';
 import axios from 'axios';
 import { PhoneAuthDTO, PhoneAuthOutput } from './dtos/phoneAuth.dto';
 import { PhoneAuthEntity } from './entities/phoneAuth.entity';
-import { exception } from 'console';
 import { PhoneConfirmDTO } from './dtos/phoneConfirm.dto';
-import { interval } from 'rxjs';
 import { Interval } from '@nestjs/schedule';
 
 @Injectable()
