@@ -16,7 +16,6 @@ export class SocialLoginMiddleWare implements NestMiddleware {
       if ('socialId' in data) {
         const after = [];
         const before = [];
-        console.log(before);
 
         let exist = await this.userService.findByCondition({
           socialId: data.socialId,

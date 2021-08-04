@@ -22,6 +22,7 @@ import { UpdateUserDataConfirmMiddleWare } from './auth/middleWare/updateUserDat
 import { UpdateUserExistConfirmMiddleWare } from './auth/middleWare/updateUserExistConfirm.middleWare';
 import { GeoModule } from './geo/geo.module';
 import { SocialLoginMiddleWare } from './auth/middleWare/joinSocialLogin.middleWare';
+import { DetailAreaCode } from './trip/entities/detailAreaCode.entity';
 
 @Module({
   imports: [
@@ -46,7 +47,16 @@ import { SocialLoginMiddleWare } from './auth/middleWare/joinSocialLogin.middleW
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_DATABASE,
-      entities: [User, TripRecord, Comment, Auth, Location, Course, AreaCode],
+      entities: [
+        User,
+        TripRecord,
+        Comment,
+        Auth,
+        Location,
+        Course,
+        AreaCode,
+        DetailAreaCode,
+      ],
       synchronize: true,
       logging: true,
     }),
