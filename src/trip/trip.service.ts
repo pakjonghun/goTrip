@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import axios from 'axios';
 import { GeoService } from 'src/geo/geo.service';
-import internal from 'stream';
 import { Repository } from 'typeorm';
 import { GetCourseProcessOutput } from './dtos/get-course-process.dto';
 import { GetCourseInput, GetCourseOutput } from './dtos/get-course.dto';
@@ -22,9 +21,7 @@ export class TripService {
     private readonly area: Repository<AreaCode>,
     @InjectRepository(DetailAreaCode)
     private readonly detailArea: Repository<DetailAreaCode>,
-  ) {
-    this.getAllB();
-  }
+  ) {}
 
   async getAllB() {
     const all = await this.area.find({});
@@ -71,16 +68,6 @@ export class TripService {
     return item;
   }
 
-  async getA() {
-    const a = await axios.get('http://localhost:4000/detail/move');
-    for (let i in a.data) {
-      const name = a.data[i]['name'];
-      const code = a.data[i]['code'];
-      console.log(code);
-      await this.area.save(this.area.create({ name, code }));
-    }
-  }
-
   async getCourse(getCourseInput: GetCourseInput): Promise<GetCourseOutput> {
     const { lat, lng, areaCode, contenttypeid, startDate, category } =
       getCourseInput;
@@ -104,9 +91,19 @@ export class TripService {
     return { ok: true, courseProcess };
   }
 
+  async moveAreaCodes() {
+    await axios.get('http://localhost:4000/detail/move').then(async (res) => {
+      const data = res.data;
+      for (const i of data) {
+        await this.area.save(this.area.create({ code: i.code, name: i.name }));
+      }
+    });
+  }
+
   async moveData() {
     await axios.get('http://localhost:4000/detail/move').then(async (res) => {
       const data = res.data;
+
       for (const obj of data) {
         for (const loketsi of obj.course) {
           console.log(loketsi);

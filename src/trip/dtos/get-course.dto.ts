@@ -1,6 +1,7 @@
 import {
   IsArray,
   IsDate,
+  IsDateString,
   IsNumber,
   IsOptional,
   IsString,
@@ -10,7 +11,7 @@ import { Course } from '../entities/course.entity';
 
 export class GetCourseInput {
   @IsOptional() // 테스트용 나중에 지울것
-  @IsDate()
+  @IsDateString()
   startDate: Date;
 
   @IsOptional() // 테스트용 나중에 지울것
