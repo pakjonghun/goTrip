@@ -18,7 +18,7 @@ export class TripService {
     const { lat, lng, areaCode, contenttypeid, startDate, category } =
       getCourseInput;
 
-    const data = await this.geoService.getWithInKm(
+    const result = await this.geoService.getWithInKm(
       lat,
       lng,
       200,
@@ -27,7 +27,7 @@ export class TripService {
       category,
     );
 
-    return { ok: true, data };
+    return result;
   }
 
   async getCourseProcess(contentid: number): Promise<GetCourseProcessOutput> {
