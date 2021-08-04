@@ -2,7 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as jwt from 'jsonwebtoken';
 import { commonMessages } from 'src/common/erroeMessages';
-import { Repository } from 'typeorm';
+import { LessThan, MoreThan, Repository } from 'typeorm';
 import { Auth } from './entities/auth.entity';
 import * as sendGridMail from '@sendgrid/mail';
 import { UserService } from 'src/user/user.service';
@@ -16,6 +16,8 @@ import { PhoneAuthDTO, PhoneAuthOutput } from './dtos/phoneAuth.dto';
 import { PhoneAuthEntity } from './entities/phoneAuth.entity';
 import { exception } from 'console';
 import { PhoneConfirmDTO } from './dtos/phoneConfirm.dto';
+import { interval } from 'rxjs';
+import { Interval } from '@nestjs/schedule';
 
 @Injectable()
 export class AuthService {
@@ -86,9 +88,17 @@ export class AuthService {
     const verifyCode = Math.floor(Math.random() * (999999 - 100000)) + 100000;
 
     try {
-      await this.phoneAuth.save(
-        this.phoneAuth.create({ code: verifyCode, phoneNumber }),
-      );
+      let exist = await this.phoneAuth.findOne({ phoneNumber });
+
+      if (!exist) {
+        exist = await this.phoneAuth.save(
+          this.phoneAuth.create({ code: verifyCode, phoneNumber }),
+        );
+      }
+
+      exist.code = verifyCode;
+      await this.phoneAuth.save(exist);
+
       return this.sendPhoneAuthNumber(phoneNumber, verifyCode);
     } catch (e) {
       return commonMessages.commonAuthFail;
@@ -185,5 +195,13 @@ export class AuthService {
     //   console.log(err);
     //   return commonMessages.commonFail('휴대폰 인증이');
     // });
+  }
+
+  @Interval(60 * 1000 * 5)
+  async deleteAfterFiveMInAuthPhone() {
+    console.log('delete');
+    await this.phoneAuth.delete({
+      createdAt: LessThan(new Date(+new Date() + 60 * 1000 * 5)),
+    });
   }
 }

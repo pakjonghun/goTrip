@@ -24,6 +24,7 @@ import { GeoModule } from './geo/geo.module';
 import { SocialLoginMiddleWare } from './auth/middleWare/joinSocialLogin.middleWare';
 import { DetailAreaCode } from './trip/entities/detailAreaCode.entity';
 import { PhoneAuthEntity } from './auth/entities/phoneAuth.entity';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { PhoneAuthEntity } from './auth/entities/phoneAuth.entity';
       synchronize: true,
       logging: false,
     }),
+    ScheduleModule.forRoot(),
     UserModule,
     AuthModule,
     CommonModule,
