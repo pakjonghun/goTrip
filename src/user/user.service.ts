@@ -8,10 +8,11 @@ import { AuthDTO, AuthOutput } from './dtos/auth.dto';
 import { FindPasswordDTO, FindPasswordOutput } from './dtos/findPassword.dto';
 import { JoinDTO, JoinOutput } from './dtos/join.dto';
 import { LoginDTO } from './dtos/login.dto';
-import { UpdateUserDTO, UpdateUserProtoType } from './dtos/updateUser.dto';
+import { UpdateUserDTO } from './dtos/updateUser.dto';
 import { User } from './entities/user.entity';
 import * as uuid from 'uuid';
 import { RefreshTokenDTO } from './dtos/refreshToken.dto';
+import { ConfirmExistDTO, ConfirmExistOutput } from './dtos/confirmExist.dto';
 
 @Injectable()
 export class UserService {
@@ -32,7 +33,7 @@ export class UserService {
       return {
         ok: true,
         ...(data.email && {
-          message: '가입하신 이메일로 인증번호가 발송되었습니다.',
+          message: '가입한 이메일로 인증번호가 발송되었습니다.',
         }),
       };
     } catch (e) {
@@ -61,12 +62,12 @@ export class UserService {
           const activeToken = this.authService.sign(
             'nickName',
             userExist.nickName,
-            1,
+            60 * 60,
           );
           const refreshToken = this.authService.sign(
             'id',
             userExist.id,
-            60 * 60,
+            60 * 60 * 24 * 7,
           );
 
           await this.user.save({
@@ -113,7 +114,7 @@ export class UserService {
     try {
       const exist = await this.findByCondition({ ['email']: email });
       if (!exist) {
-        return commonMessages.commonNotFuond('게정을');
+        return commonMessages.commonNotFuond('이메일을');
       }
       const newPassword = uuid.v4();
       await this.authService.sendMail(exist.email, newPassword);
@@ -132,7 +133,6 @@ export class UserService {
   }
 
   async updateUser(user: User, data: UpdateUserDTO) {
-    console.log(data);
     const isEmailDifferent = 'email' in data && data.email !== user.email;
     try {
       if (isEmailDifferent) {
@@ -140,8 +140,14 @@ export class UserService {
         await this.authService.sendMail(data.email, newVerify.code);
       }
 
+      let activeToken;
+      if ('nickName' in data && data.nickName !== user.nickName) {
+        activeToken = this.authService.sign('nickName', data.nickName, 60 * 60);
+      }
+
       for (let i in data) {
         if (i === 'passwordConfirm') continue;
+
         user[i] = data[i];
       }
 
@@ -152,6 +158,7 @@ export class UserService {
         ...(isEmailDifferent && {
           message: '변경된 이메일로 인증번호가 발송되었습니다.',
         }),
+        ...(activeToken && { activeToken }),
       };
     } catch (e) {
       console.log(e);
@@ -172,58 +179,49 @@ export class UserService {
     }
   }
 
-  async findBySocialId(socialId: string): Promise<User> {
-    return this.user.findOne({ socialId });
-  }
+  async confirmExist(
+    user: User,
+    data: ConfirmExistDTO,
+  ): Promise<ConfirmExistOutput> {
+    try {
+      for (let item of Object.keys(data)) {
+        let exist;
 
-  async findByNickName(nickName: string): Promise<User> {
-    return this.user.findOne(
-      { nickName },
-      {
-        select: [
-          'pwd',
-          'email',
-          'id',
-          'nickName',
-          'phoneNumber',
-          'socialId',
-          'varified',
-        ],
-      },
-    );
-  }
+        if (!user) {
+          exist = await this.findByCondition({
+            [item]: data[item],
+          });
+        } else {
+          exist = await this.exceptMeFound(user.id, {
+            [item]: data[item],
+          });
+        }
 
-  async findByEmail(email: string): Promise<User> {
-    return this.user.findOne({ email });
+        if (exist) {
+          return commonMessages.commonExist(item);
+        }
+      }
+      return commonMessages.commonSuccess;
+    } catch (e) {
+      console.log(e);
+      return commonMessages.commonFail('중복확인이');
+    }
   }
 
   async registerUser(data: JoinDTO): Promise<User> {
-    return this.user.save(this.user.create({ ...data }));
-  }
-
-  async findByPhoneNumber(phoneNumber: string): Promise<User> {
-    return this.user.findOne({ phoneNumber });
-  }
-
-  async findByToken(token: string): Promise<User> {
-    return this.user.findOne({ refreshToken: token });
+    const newUser = this.user.create(data);
+    return this.user.save(newUser);
   }
 
   async findByCondition(condition: object): Promise<User> {
-    return this.user.findOne(condition, {
-      select: ['pwd', 'email', 'id'],
-    });
+    return this.user.findOne(condition);
   }
 
   async exceptMeFound(id: number, cretical?: object): Promise<User> {
-    return this.user.findOne({ where: { id: Not(id) }, ...cretical });
+    return this.user.findOne({ where: { id: Not(id), ...cretical } });
   }
 
   async deleteToken(id) {
     return this.user.save({ id, refreshToken: null });
-  }
-
-  async updateProptoType(user: User): Promise<void> {
-    await this.user.save(user);
   }
 }

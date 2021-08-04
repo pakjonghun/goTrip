@@ -8,8 +8,10 @@ import {
 import { CoreEntity } from 'src/common/entities/coreEntity';
 import { BeforeInsert, BeforeUpdate, Column, Entity } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { Injectable } from '@nestjs/common';
 
 @Entity()
+@Injectable()
 export class User extends CoreEntity {
   @Column({ unique: true })
   @IsString({ message: '올바른 닉네임 형식이 아닙니다.' })

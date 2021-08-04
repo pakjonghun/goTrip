@@ -53,13 +53,18 @@ export class TokenMiddleWare implements NestMiddleware {
       }
 
       if (typeof tokenPayload === 'object' && 'nickName' in tokenPayload) {
-        const user = await this.userService.findByNickName(
-          tokenPayload['nickName'],
-        );
+        const user = await this.userService.findByCondition({
+          nickName: tokenPayload['nickName'],
+        });
+
+        if (!user) {
+          return res.json(commonMessages.commonAuthFail);
+        }
 
         req['user'] = user;
       }
     }
+
     return next();
   }
 }

@@ -1,5 +1,5 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
-import { json, NextFunction, Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { commonMessages } from 'src/common/erroeMessages';
 import { UserService } from 'src/user/user.service';
 import { AuthService } from '../auth.service';
@@ -18,19 +18,20 @@ export class UpdateUserExistConfirmMiddleWare implements NestMiddleware {
     }
 
     try {
-      const data = req.body;
       for (let item in data) {
-        if (item === 'password' || item === 'passwordConfirm') continue;
+        if (item === 'pwd' || item === 'pwdConfirm') continue;
         const result = await this.userService.exceptMeFound(user.id, {
           [item]: data[item],
         });
-        if (result) return res.json(commonMessages.commonExist(item));
+        console.log(result);
+        if (result) {
+          return res.json(commonMessages.commonExist(item));
+        }
       }
     } catch (e) {
       console.log(e);
-      return res.json(commonMessages.commonFail('프로파일 변경이'));
+      return res.json(commonMessages.commonFail('회원정보 변경이'));
     }
-
     return next();
   }
 }

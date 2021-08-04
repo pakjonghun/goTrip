@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsString } from 'class-validator';
 import { CommonOutput } from 'src/common/dtos/common.dto';
 
 export class RefreshTokenDTO {

@@ -1,7 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as jwt from 'jsonwebtoken';
-import { CommonOutput } from 'src/common/dtos/common.dto';
 import { commonMessages } from 'src/common/erroeMessages';
 import { Repository } from 'typeorm';
 import { Auth } from './entities/auth.entity';
