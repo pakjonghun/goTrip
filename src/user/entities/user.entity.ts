@@ -15,10 +15,10 @@ import { Injectable } from '@nestjs/common';
 export class User extends CoreEntity {
   @Column({ unique: true })
   @IsString({ message: '올바른 닉네임 형식이 아닙니다.' })
-  @Matches(/^[a-z0-9!-=\S]*$/i, {
+  @Matches(/^[ㄱ-ㅎㅏ-ㅣ가-힣a-z0-9!-=\S]*$/i, {
     message: '닉네임은 형식에 맞는 값을 사용하세요.',
   })
-  @Length(3, 15, { message: '닉네임을 3글자 이상 15글자 이하로 입력하세요' })
+  @Length(2, 15, { message: '닉네임을 3글자 이상 15글자 이하로 입력하세요' })
   nickName: string;
 
   @Column({ unique: true, nullable: true })
