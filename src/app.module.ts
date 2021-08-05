@@ -26,6 +26,7 @@ import { DetailAreaCode } from './trip/entities/detailAreaCode.entity';
 import { PhoneAuthEntity } from './auth/entities/phoneAuth.entity';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ApiModule } from './api/api.module';
+import { TripDetail } from './trip/entities/tripDetail.entity';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { ApiModule } from './api/api.module';
         Course,
         AreaCode,
         DetailAreaCode,
+        TripDetail,
       ],
       synchronize: true,
       logging: false,

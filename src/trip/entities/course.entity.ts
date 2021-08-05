@@ -1,11 +1,9 @@
 import { IsOptional } from 'class-validator';
+import { CoreEntity } from 'src/common/entities/coreEntity';
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
-export class Course {
-  @PrimaryGeneratedColumn()
-  id: number;
-
+export class Course extends CoreEntity {
   @Column({ type: 'bigint', nullable: true, unique: true })
   @IsOptional()
   contentid?: number;
@@ -64,9 +62,25 @@ export class Course {
 
   @Column({ nullable: true })
   @IsOptional()
-  length?: string;
+  taketime?: string;
 
   @Column({ nullable: true })
   @IsOptional()
-  taketime?: string;
+  createdtime: string;
+
+  @Column({ nullable: true })
+  @IsOptional()
+  modifiedtime: string;
+
+  @Column({ nullable: true })
+  @IsOptional()
+  readcount: number;
+
+  @Column({ nullable: true })
+  @IsOptional()
+  addr1?: string;
+
+  @Column({ nullable: true })
+  @IsOptional()
+  addr2?: string;
 }

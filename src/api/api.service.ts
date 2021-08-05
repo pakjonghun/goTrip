@@ -4,7 +4,6 @@ import { AreaCode } from 'src/trip/entities/areacode.entity';
 import { DetailAreaCode } from 'src/trip/entities/detailAreaCode.entity';
 import { Repository } from 'typeorm';
 import axios from 'axios';
-import { Interval } from '@nestjs/schedule';
 import { Location } from 'src/trip/entities/location.entity';
 
 @Injectable()
@@ -14,7 +13,10 @@ export class ApiService {
     @InjectRepository(DetailAreaCode)
     private readonly detailArea: Repository<DetailAreaCode>,
     @InjectRepository(Location) private readonly location: Repository<Location>,
-  ) {}
+  ) {
+    // this.sampleDetail();
+    // this.getListData();
+  }
 
   encodeKey =
     'R1YkIepzkxhj6Ouue%2Fo0BcyXRM89NzjOU2baG8hXDjqv7MyVSxspxUBLzUZOJPISnGgxDg8SaIutpCmhB7OE%2Fg%3D%3D';
@@ -30,11 +32,12 @@ export class ApiService {
     },
   });
 
-  async getAllB() {
+  //모든 지역정보를 불러와서 그 지역코드에서 디테일 지역코드를 받아와서 db에 넣어줌
+  async insertAllAreaCode() {
     const all = await this.area.find({});
     for (let i of all) {
       const code = i.code;
-      const arrayCode = await this.getB(code);
+      const arrayCode = await this.getAllAreaCode(code);
       for (let k in arrayCode) {
         const j = arrayCode[k];
 
@@ -44,7 +47,8 @@ export class ApiService {
     }
   }
 
-  async getB(code: number) {
+  //세부 지역코드만 받아오는 코드(건들지 마셈. 쓸일 없 다른 메서드에서 호출되기만함)
+  async getAllAreaCode(code: number) {
     const data = await axios.get(
       'http://api.visitkorea.or.kr/openapi/service/rest/KorService/areaCode',
       {
@@ -94,7 +98,7 @@ export class ApiService {
 
   getListData = async () => {
     const codes = await this.area.find({ code: 1 });
-
+    //나중에 코드를 시군구 코드로 바꾸고, 파라미터에도 시군구 코드 추가해야됨.
     for (let i of codes) {
       const { code } = i;
 
@@ -114,6 +118,7 @@ export class ApiService {
           },
         },
       } = data;
+      return console.log(item);
       for (let j of item) {
         //contentid가 있을경우 반복하지 않도록 코드추가
         const exist = await this.location.count({ contentid: j.contentId });
@@ -162,4 +167,17 @@ export class ApiService {
       }
     }
   };
+
+  async sampleDetail() {
+    const data = await this.api.get('detailImage', {
+      params: {
+        contentId: 1265735,
+        defaultYN: 'Y',
+        contentTypeId: 25,
+      },
+    });
+    console.dir(data, { depth: 30 });
+  }
 }
+
+//
