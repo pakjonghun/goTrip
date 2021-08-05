@@ -28,7 +28,7 @@ export class ApiService {
     //추천코스 관광정보는
     //채우면서 디테일 3개를 받아오면서 관계를 맺으면서 채워야 한다.
     // this.getCourseData();
-    // this.getLocationUpdate();
+    this.getLocationUpdate();
     // this.sampleLocation();
     // this.sampleDetail();
     // 2384832 25
@@ -183,9 +183,7 @@ export class ApiService {
         } else {
           imgExist = imgs;
         }
-        console.log(imgExist, courseSave);
         imgExist.course = courseSave;
-        console.log(imgExist);
         await this.image.save(imgExist);
       }
     }
@@ -220,7 +218,9 @@ export class ApiService {
   }
 
   encodeKey =
-    'R1YkIepzkxhj6Ouue%2Fo0BcyXRM89NzjOU2baG8hXDjqv7MyVSxspxUBLzUZOJPISnGgxDg8SaIutpCmhB7OE%2Fg%3D%3D';
+    'DbTqTFQ01Byhsb85l08hrTaU8NhtcBaNcLw4Np%2BTT6tUsxKDoIgNxTFqMEH5NBK9NuGYxAgwL6WQf6ODDGBUeg%3D%3D';
+  // encodeKey =
+  //   'R1YkIepzkxhj6Ouue%2Fo0BcyXRM89NzjOU2baG8hXDjqv7MyVSxspxUBLzUZOJPISnGgxDg8SaIutpCmhB7OE%2Fg%3D%3D';
 
   serviceKey = decodeURIComponent(this.encodeKey);
 
@@ -341,9 +341,9 @@ export class ApiService {
     for (let i of codes) {
       const data = await this.api.get('areaBasedList', {
         params: {
-          contentTypeId: 39,
+          contentTypeId: 12,
           numOfRows: 20,
-          pageNo: 2,
+          pageNo: 1,
           areaCode: i.code,
         },
       });
@@ -378,7 +378,7 @@ export class ApiService {
           courseExist = j;
         }
         //코스엔티티에 저장한다
-        console.log('location');
+        // console.log('location');
         const courseSave = await this.location.save(courseExist);
         //공통 디테일 정보도 동일하게 검색해서 업데이트 한다. 다른점은 위에서 저장한 코스를 관계를 맺어준다.는 점이다.
         const tripdetailData = await this.getDetail(
@@ -402,7 +402,7 @@ export class ApiService {
 
         //바로 여기서 관계를 맺어준다.
         tripDetailDetailExist.location = courseSave;
-        console.log('tripdetail');
+        // console.log('tripdetail');
         await this.tripDetail.save(tripDetailDetailExist);
 
         //이번엔 소개정보를 업데이트 한다. 소개정보는 관광지 타입을 안주면 안뜬다
@@ -426,7 +426,7 @@ export class ApiService {
         }
 
         //이번엔 관계 또 맺어줄 필요는 없다
-        console.log('tripdetail');
+        // console.log('tripdetail');
         await this.tripDetail.save(tripDetailDetailExist2);
 
         //마지막 이미지 정보를 받아온다. //여기서 25가 아니라 그 코스의 타입을 넣어줘야 한다. 이미지 없는것이 너무 많다. 그래도 최대한 받아보자.
@@ -435,7 +435,6 @@ export class ApiService {
           Number(j.contentid),
           j.contenttypeid,
         );
-        console.log(imgs, typeof imgs);
         if (!imgs) continue;
         if (typeof imgs == 'object') {
           await this.image.save(imgs);
@@ -444,7 +443,7 @@ export class ApiService {
         //이미지는 컨텐트 아이디가 많다. 중복허용된다 그만큼 많으면 좋지 뭐 ㅋ
         for (let q of imgs) {
           q.location = courseSave;
-          console.log('imgsave');
+          // console.log('imgsave');
           await this.image.save(q);
         }
       }
