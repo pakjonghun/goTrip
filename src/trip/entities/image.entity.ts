@@ -1,10 +1,12 @@
 import { IsOptional } from 'class-validator';
 import { CoreEntity } from 'src/common/entities/coreEntity';
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, ManyToOne } from 'typeorm';
+import { Course } from './course.entity';
+import { Location } from './location.entity';
 
 @Entity()
-export class CourseRouteEntity extends CoreEntity {
-  @Column({ nullable: true })
+export class Image extends CoreEntity {
+  @Column({ nullable: true, unique: true })
   @IsOptional()
   @Column({ nullable: true })
   contentid?: string;
@@ -28,4 +30,14 @@ export class CourseRouteEntity extends CoreEntity {
   @IsOptional()
   @Column({ nullable: true })
   smallimageurl?: string;
+
+  @ManyToOne((type) => Location, (Location) => Location.image, {
+    onDelete: 'CASCADE',
+  })
+  location: Location;
+
+  @ManyToOne((type) => Course, (Course) => Course.image, {
+    onDelete: 'CASCADE',
+  })
+  course: Course;
 }

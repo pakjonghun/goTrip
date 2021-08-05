@@ -1,11 +1,5 @@
 import { IsNumber, IsString } from 'class-validator';
-import {
-  Column,
-  Entity,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  RelationId,
-} from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { DetailAreaCode } from './detailAreaCode.entity';
 
 @Entity()

@@ -27,6 +27,8 @@ import { PhoneAuthEntity } from './auth/entities/phoneAuth.entity';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ApiModule } from './api/api.module';
 import { TripDetail } from './trip/entities/tripDetail.entity';
+import { CourseRoute } from './trip/entities/courseRoute.entity';
+import { Image } from './trip/entities/image.entity';
 
 @Module({
   imports: [
@@ -67,6 +69,8 @@ import { TripDetail } from './trip/entities/tripDetail.entity';
         AreaCode,
         DetailAreaCode,
         TripDetail,
+        CourseRoute,
+        Image,
       ],
       synchronize: true,
       logging: false,
@@ -77,9 +81,7 @@ import { TripDetail } from './trip/entities/tripDetail.entity';
     CommonModule,
     TripModule,
     TripSupportModule,
-
     GeoModule,
-
     ApiModule,
   ],
   controllers: [],

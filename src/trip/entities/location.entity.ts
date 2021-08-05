@@ -1,9 +1,14 @@
 import { IsOptional } from 'class-validator';
 import { CoreEntity } from 'src/common/entities/coreEntity';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Image } from './image.entity';
+import { TripDetail } from './tripDetail.entity';
 
 @Entity()
 export class Location extends CoreEntity {
+  @OneToMany((type) => Image, (Image) => Image.location)
+  image: Image[];
+
   @Column({ type: 'bigint', nullable: true, unique: true })
   @IsOptional()
   contentid?: number;
@@ -78,10 +83,6 @@ export class Location extends CoreEntity {
 
   @Column({ nullable: true })
   @IsOptional()
-  tel: string;
-
-  @Column({ nullable: true })
-  @IsOptional()
   zipcode: string;
 
   @Column({ nullable: true })
@@ -91,4 +92,7 @@ export class Location extends CoreEntity {
   @Column({ nullable: true })
   @IsOptional()
   addr2?: string;
+
+  @OneToMany((type) => TripDetail, (TripDetail) => TripDetail.location)
+  tripDetail: TripDetail[];
 }
