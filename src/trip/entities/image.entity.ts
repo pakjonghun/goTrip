@@ -6,7 +6,7 @@ import { Location } from './location.entity';
 
 @Entity()
 export class Image extends CoreEntity {
-  @Column({ nullable: true, unique: true })
+  @Column({ nullable: true })
   @IsOptional()
   @Column({ nullable: true })
   contentid?: string;

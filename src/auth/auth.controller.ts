@@ -15,4 +15,9 @@ export class AuthController {
   phoneConfirm(@Body() data: PhoneConfirmDTO) {
     return this.authService.phoneConfirm(data);
   }
+
+  @Post('socialtoken')
+  socialToken(@Body() data: string) {
+    return this.authService.getSocialUserInfo(data);
+  }
 }
