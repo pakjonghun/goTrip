@@ -1,10 +1,14 @@
 import { IsOptional } from 'class-validator';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { CoreEntity } from 'src/common/entities/coreEntity';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { CourseRoute } from './courseRoute.entity';
+import { Image } from './image.entity';
+import { TripDetail } from './tripDetail.entity';
 
 @Entity()
-export class Course {
-  @PrimaryGeneratedColumn()
-  id: number;
+export class Course extends CoreEntity {
+  @OneToMany((type) => CourseRoute, (CourseRoute) => CourseRoute.course)
+  courseRoute: CourseRoute[];
 
   @Column({ type: 'bigint', nullable: true, unique: true })
   @IsOptional()
@@ -64,9 +68,31 @@ export class Course {
 
   @Column({ nullable: true })
   @IsOptional()
-  length?: string;
+  taketime?: string;
 
   @Column({ nullable: true })
   @IsOptional()
-  taketime?: string;
+  createdtime: string;
+
+  @Column({ nullable: true })
+  @IsOptional()
+  modifiedtime: string;
+
+  @Column({ nullable: true })
+  @IsOptional()
+  readcount: number;
+
+  @Column({ nullable: true })
+  @IsOptional()
+  addr1?: string;
+
+  @Column({ nullable: true })
+  @IsOptional()
+  addr2?: string;
+
+  @OneToMany((type) => TripDetail, (TripDetail) => TripDetail.course)
+  tripDetail: TripDetail[];
+
+  @OneToMany((type) => Image, (Image) => Image.course)
+  image: Image[];
 }

@@ -25,6 +25,10 @@ import { SocialLoginMiddleWare } from './auth/middleWare/joinSocialLogin.middleW
 import { DetailAreaCode } from './trip/entities/detailAreaCode.entity';
 import { PhoneAuthEntity } from './auth/entities/phoneAuth.entity';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ApiModule } from './api/api.module';
+import { TripDetail } from './trip/entities/tripDetail.entity';
+import { CourseRoute } from './trip/entities/courseRoute.entity';
+import { Image } from './trip/entities/image.entity';
 
 @Module({
   imports: [
@@ -64,6 +68,9 @@ import { ScheduleModule } from '@nestjs/schedule';
         Course,
         AreaCode,
         DetailAreaCode,
+        TripDetail,
+        CourseRoute,
+        Image,
       ],
       synchronize: true,
       logging: false,
@@ -74,8 +81,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     CommonModule,
     TripModule,
     TripSupportModule,
-
     GeoModule,
+    ApiModule,
   ],
   controllers: [],
   providers: [],
