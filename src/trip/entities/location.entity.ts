@@ -13,7 +13,7 @@ export class Location extends PickType(CoreEntity, ['id']) {
   @IsNumber()
   contentid: number;
 
-  @Column()
+  @Column({ nullable: true })
   @IsOptional()
   @IsNumber()
   subcontentid: number;

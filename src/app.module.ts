@@ -25,6 +25,7 @@ import { SocialLoginMiddleWare } from './auth/middleWare/joinSocialLogin.middleW
 import { DetailAreaCode } from './trip/entities/detailAreaCode.entity';
 import { PhoneAuthEntity } from './auth/entities/phoneAuth.entity';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ApiModule } from './api/api.module';
 
 @Module({
   imports: [
@@ -76,6 +77,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     TripSupportModule,
 
     GeoModule,
+
+    ApiModule,
   ],
   controllers: [],
   providers: [],
