@@ -218,7 +218,9 @@ export class ApiService {
   }
 
   encodeKey =
-    'DbTqTFQ01Byhsb85l08hrTaU8NhtcBaNcLw4Np%2BTT6tUsxKDoIgNxTFqMEH5NBK9NuGYxAgwL6WQf6ODDGBUeg%3D%3D';
+    '3zPyk8%2FXWmTWhpEKQexMhOskMVyWPnJ%2F4RcROrxpwmeX7O%2BELFIo4tzXwlCh5Wyqi7lbjc3gAvcTOEgzEA08Xw%3D%3D';
+  // encodeKey =
+  //   'DbTqTFQ01Byhsb85l08hrTaU8NhtcBaNcLw4Np%2BTT6tUsxKDoIgNxTFqMEH5NBK9NuGYxAgwL6WQf6ODDGBUeg%3D%3D';
   // encodeKey =
   //   'R1YkIepzkxhj6Ouue%2Fo0BcyXRM89NzjOU2baG8hXDjqv7MyVSxspxUBLzUZOJPISnGgxDg8SaIutpCmhB7OE%2Fg%3D%3D';
 
@@ -341,9 +343,9 @@ export class ApiService {
     for (let i of codes) {
       const data = await this.api.get('areaBasedList', {
         params: {
-          contentTypeId: 28,
+          contentTypeId: 12,
           numOfRows: 20,
-          pageNo: 1,
+          pageNo: 2,
           areaCode: i.code,
         },
       });
@@ -378,7 +380,7 @@ export class ApiService {
           courseExist = j;
         }
         //코스엔티티에 저장한다
-        console.log('location');
+        // console.log('location');
         const courseSave = await this.location.save(courseExist);
         //공통 디테일 정보도 동일하게 검색해서 업데이트 한다. 다른점은 위에서 저장한 코스를 관계를 맺어준다.는 점이다.
         const tripdetailData = await this.getDetail(
@@ -402,7 +404,7 @@ export class ApiService {
 
         //바로 여기서 관계를 맺어준다.
         tripDetailDetailExist.location = courseSave;
-        console.log('tripdetail');
+        // console.log('tripdetail');
         await this.tripDetail.save(tripDetailDetailExist);
 
         //이번엔 소개정보를 업데이트 한다. 소개정보는 관광지 타입을 안주면 안뜬다
@@ -426,7 +428,7 @@ export class ApiService {
         }
 
         //이번엔 관계 또 맺어줄 필요는 없다
-        console.log('tripdetail');
+        // console.log('tripdetail');
         await this.tripDetail.save(tripDetailDetailExist2);
 
         //마지막 이미지 정보를 받아온다. //여기서 25가 아니라 그 코스의 타입을 넣어줘야 한다. 이미지 없는것이 너무 많다. 그래도 최대한 받아보자.
@@ -443,7 +445,7 @@ export class ApiService {
         //이미지는 컨텐트 아이디가 많다. 중복허용된다 그만큼 많으면 좋지 뭐 ㅋ
         for (let q of imgs) {
           q.location = courseSave;
-          console.log('imgsave');
+          // console.log('imgsave');
           await this.image.save(q);
         }
       }
