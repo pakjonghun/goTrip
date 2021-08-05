@@ -27,7 +27,8 @@ export class ApiService {
     //먼저 25번 코드로 코스 엔티티를 채우는데
     //추천코스 관광정보는
     //채우면서 디테일 3개를 받아오면서 관계를 맺으면서 채워야 한다.
-    this.getCourseData();
+    // this.getCourseData();
+    // this.getLocationUpdate();
     // this.sampleLocation();
     // this.sampleDetail();
     // 2384832 25
@@ -329,6 +330,124 @@ export class ApiService {
     } = data;
     for (let i of item) {
       console.log(i.contentid);
+    }
+  }
+
+  async getLocationUpdate() {
+    //지역코드 갖고와서(일단 시군구 제외 도단위 코드)
+    const codes = await this.area.find({});
+
+    //반복문으로 지역기반 관광지 정보를 받아와서
+    for (let i of codes) {
+      const data = await this.api.get('areaBasedList', {
+        params: {
+          contentTypeId: 39,
+          numOfRows: 20,
+          pageNo: 2,
+          areaCode: i.code,
+        },
+      });
+      console.log(i.id);
+      const {
+        data: {
+          response: {
+            body: {
+              items: { item },
+            },
+          },
+        },
+      } = data;
+      //정보 1개는 저장 안해준다. 중간에 멈추도록 해놨으니 2개 이상으로 테스트 해라.
+      if (!item) continue;
+      if (!item.length) continue;
+
+      //받아온 관광지(이번에는 로로케이션임) 정보들을 다시 반복문으로 돌려서
+      for (let j of item) {
+        //왜 있는지 확인하냐면 지우고 다시 받거나 할 경우 id가 날라가서 관계 자체가 사라진다.(데이터가 날라감)
+        //그래서 있는지 확인하고 없으면 만들고 있으면 업데이트만 시켜준다. 절대로 관계가 사라질 일은 없다.
+
+        let courseExist = await this.location.findOne(
+          { contentid: j.contentid },
+          { select: ['id'] },
+        );
+        if (courseExist) {
+          for (let q in j) {
+            courseExist[q] = j[q];
+          }
+        } else {
+          courseExist = j;
+        }
+        //코스엔티티에 저장한다
+        console.log('location');
+        const courseSave = await this.location.save(courseExist);
+        //공통 디테일 정보도 동일하게 검색해서 업데이트 한다. 다른점은 위에서 저장한 코스를 관계를 맺어준다.는 점이다.
+        const tripdetailData = await this.getDetail(
+          'detailCommon',
+          Number(j.contentid),
+        );
+        if (!tripdetailData) continue;
+
+        let tripDetailDetailExist = await this.tripDetail.findOne(
+          { contentid: tripdetailData.contentid },
+          { select: ['id'] },
+        );
+
+        if (tripDetailDetailExist) {
+          for (let q in tripdetailData) {
+            tripDetailDetailExist[q] = tripdetailData[q];
+          }
+        } else {
+          tripDetailDetailExist = tripdetailData;
+        }
+
+        //바로 여기서 관계를 맺어준다.
+        tripDetailDetailExist.location = courseSave;
+        console.log('tripdetail');
+        await this.tripDetail.save(tripDetailDetailExist);
+
+        //이번엔 소개정보를 업데이트 한다. 소개정보는 관광지 타입을 안주면 안뜬다
+        const tripdetailData2 = await this.getDetail(
+          'detailIntro',
+          Number(j.contentid),
+          j.contenttypeid,
+        );
+        if (!tripdetailData2) continue;
+        let tripDetailDetailExist2 = await this.tripDetail.findOne(
+          { contentid: tripdetailData2.contentid },
+          { select: ['id'] },
+        );
+
+        if (tripDetailDetailExist2) {
+          for (let q in tripdetailData2) {
+            tripDetailDetailExist2[q] = tripdetailData2[q];
+          }
+        } else {
+          tripDetailDetailExist2 = tripdetailData2;
+        }
+
+        //이번엔 관계 또 맺어줄 필요는 없다
+        console.log('tripdetail');
+        await this.tripDetail.save(tripDetailDetailExist2);
+
+        //마지막 이미지 정보를 받아온다. //여기서 25가 아니라 그 코스의 타입을 넣어줘야 한다. 이미지 없는것이 너무 많다. 그래도 최대한 받아보자.
+        const imgs = await this.getDetail(
+          'detailImage',
+          Number(j.contentid),
+          j.contenttypeid,
+        );
+        console.log(imgs, typeof imgs);
+        if (!imgs) continue;
+        if (typeof imgs == 'object') {
+          await this.image.save(imgs);
+          continue;
+        }
+        //이미지는 컨텐트 아이디가 많다. 중복허용된다 그만큼 많으면 좋지 뭐 ㅋ
+        for (let q of imgs) {
+          q.location = courseSave;
+          console.log('imgsave');
+          await this.image.save(q);
+        }
+      }
     }
   }
 }
