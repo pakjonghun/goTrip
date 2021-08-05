@@ -15,6 +15,7 @@ import { PhoneAuthDTO, PhoneAuthOutput } from './dtos/phoneAuth.dto';
 import { PhoneAuthEntity } from './entities/phoneAuth.entity';
 import { PhoneConfirmDTO } from './dtos/phoneConfirm.dto';
 import { Interval } from '@nestjs/schedule';
+import { ApiExcludeEndpoint } from '@nestjs/swagger';
 
 @Injectable()
 export class AuthService {
@@ -65,6 +66,7 @@ export class AuthService {
         code,
       },
     };
+    console.log(this.configService.get('MAIL_KEY'));
     sendGridMail.setApiKey(this.configService.get('MAIL_KEY'));
     await sendGridMail.send(email);
   }
@@ -200,5 +202,15 @@ export class AuthService {
     await this.phoneAuth.delete({
       createdAt: LessThan(new Date(+new Date() + 60 * 1000 * 5)),
     });
+  }
+
+  async getSocialUserInfo(token) {
+    const data = await axios.get('http://kapi.kakao.com//v2/user/me', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-type': 'application/x-www-form-urlencoded;charset=utf-8',
+      },
+    });
+    console.log(data);
   }
 }
