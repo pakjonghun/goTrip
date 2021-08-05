@@ -15,7 +15,6 @@ import { PhoneAuthDTO, PhoneAuthOutput } from './dtos/phoneAuth.dto';
 import { PhoneAuthEntity } from './entities/phoneAuth.entity';
 import { PhoneConfirmDTO } from './dtos/phoneConfirm.dto';
 import { Interval } from '@nestjs/schedule';
-import { ApiExcludeEndpoint } from '@nestjs/swagger';
 
 @Injectable()
 export class AuthService {
