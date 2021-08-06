@@ -186,11 +186,11 @@ export class UserService {
     try {
       for (let item of Object.keys(data)) {
         let exist;
-
         if (!user) {
           exist = await this.findByCondition({
             [item]: data[item],
           });
+          const a = await this.user.findOne({ where: { [item]: data[item] } });
         } else {
           exist = await this.exceptMeFound(user.id, {
             [item]: data[item],
