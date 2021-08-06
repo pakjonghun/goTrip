@@ -191,12 +191,13 @@ export class UserService {
             [item]: data[item],
           });
           const a = await this.user.findOne({ where: { [item]: data[item] } });
+          console.log(item, data[item], a);
         } else {
           exist = await this.exceptMeFound(user.id, {
             [item]: data[item],
           });
         }
-
+        console.log(exist);
         if (exist) {
           return commonMessages.commonExist(item);
         }
