@@ -2,7 +2,7 @@ import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AuthService } from 'src/auth/auth.service';
 import { commonMessages } from 'src/common/erroeMessages';
-import { Not, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { JoinDTO, JoinOutput } from './dtos/join.dto';
 import { LoginDTO, LoginOutput } from './dtos/login.dto';
 import { UpdateUserDTO } from './dtos/updateUser.dto';
@@ -18,6 +18,7 @@ import {
   ChangePasswordDTO,
   ChangePasswordOutput,
 } from './dtos/changePassword.dto';
+import * as qs from 'qs';
 
 @Injectable()
 export class UserService {
@@ -33,14 +34,14 @@ export class UserService {
     let data;
     try {
       data = await axios.get('https://kapi.kakao.com/v2/user/me', {
-        headers: {
+        headers: qs.stringify({
           'content-type': 'application/x-www-form-urlencoded',
           authorization: `Bearer ${token}`,
-        },
+        }),
       });
     } catch (e) {
       console.log(e);
-      return res.json(commonMessages.commonFail('소셜 인증이 '));
+      return res.json(commonMessages.commonFail('카카오 소셜 인증이 '));
     }
 
     const {
@@ -56,7 +57,6 @@ export class UserService {
       ...(nickname && { nickName: nickname }),
       ...(email && { email }),
     };
-
     return result;
   }
 
@@ -70,7 +70,7 @@ export class UserService {
       });
     } catch (e) {
       console.log(e);
-      return res.json(commonMessages.commonFail('소셜 인증이 '));
+      return res.json(commonMessages.commonFail('네이버 소셜 인증이 '));
     }
 
     const {
@@ -91,8 +91,8 @@ export class UserService {
   }
 
   hangleChanger(key) {
-    if (key === 'nickName') {
-      return '닉네임';
+    if (key === 'email') {
+      return '이메일';
     } else if (key === 'phoneNumber') {
       return '연락처';
     }
@@ -105,12 +105,14 @@ export class UserService {
           { [i]: data[i] },
           { select: ['id', 'email', 'pwd', 'nickName', 'phoneNumber'] },
         );
+
         if (exist) {
           return [i, exist];
         }
       }
       continue;
     }
+    return [null, null];
   }
 
   async join(data: JoinDTO): Promise<JoinOutput> {
@@ -144,9 +146,10 @@ export class UserService {
 
     if (path === 'kakao') {
       userInfo = await this.getKakaoUserInfo(res, socialToken);
+    } else {
+      userInfo = await this.getNaverUserInfo(res, socialToken);
     }
-    userInfo = await this.getNaverUserInfo(res, socialToken);
-
+    console.log(userInfo);
     try {
       const [key, exist] = await this.onlyExistCheck(userInfo);
 
@@ -158,7 +161,6 @@ export class UserService {
           }
         }
       }
-
       if (exist) {
         return commonMessages.commonExist(this.hangleChanger(key));
       }

@@ -1,19 +1,9 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Post,
-  Query,
-  Req,
-  Res,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Req, Res } from '@nestjs/common';
 import axios from 'axios';
 import { URLSearchParams } from 'url';
 import { AuthService } from './auth.service';
 import { PhoneAuthDTO, PhoneAuthOutput } from './dtos/phoneAuth.dto';
 import { PhoneConfirmDTO, PhoneConfirmOutput } from './dtos/phoneConfirm.dto';
-import * as qs from 'qs';
 import { getUser } from './getUser.decorator';
 import { User } from 'src/user/entities/user.entity';
 import {
@@ -21,7 +11,8 @@ import {
   FindPasswordOutput,
 } from 'src/user/dtos/findPassword.dto';
 import { TempTokenDTO } from './dtos/tempToken.dto';
-import { Request } from 'express';
+import { Request, Response } from 'express';
+import qs from 'qs';
 
 @Controller('auth')
 export class AuthController {
@@ -47,4 +38,19 @@ export class AuthController {
 
   @Post('temptoken')
   tempToken(@Body() data: TempTokenDTO) {}
+
+  @Get('kakao')
+  kakaotoc(@Res() res: Response) {
+    const config = {
+      client_id: 'c7cc12486e000f61e2024be8dbc30e3c',
+      redirect_uri: 'http://localhost:5000/auth/test',
+      response_type: 'code',
+    };
+
+    qs.stringify(config);
+    const rest = new URLSearchParams(config).toString();
+    const url = `https://kauth.kakao.com/oauth/authorize?${rest}`;
+    console.log(url);
+    return res.redirect(url);
+  }
 }

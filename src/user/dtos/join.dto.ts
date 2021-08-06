@@ -25,8 +25,4 @@ export class JoinDTO extends PickType(User, ['phoneNumber']) {
   pwdConfirm: string;
 }
 
-export class JoinOutput extends CommonOutput {
-  message?: string;
-  refreshToken?: string;
-  accessToken?: string;
-}
+export class JoinOutput extends CommonOutput {}
