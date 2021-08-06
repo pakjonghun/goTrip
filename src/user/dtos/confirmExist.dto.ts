@@ -3,7 +3,11 @@ import { IsOptional, IsString, Length, Matches } from 'class-validator';
 import { CommonOutput } from 'src/common/dtos/common.dto';
 import { User } from '../entities/user.entity';
 
-export class ConfirmExistDTO extends PickType(User, ['email', 'phoneNumber']) {
+export class ConfirmExistDTO extends PickType(User, [
+  'email',
+  'phoneNumber',
+  'socialId',
+]) {
   @IsString({ message: '올바른 닉네임 형식이 아닙니다.' })
   @Matches(/^[a-z0-9!-=\S]*$/i, {
     message: '닉네임은 형식에 맞는 값을 사용하세요.',

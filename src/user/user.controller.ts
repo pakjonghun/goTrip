@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Post, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Put,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import { Response } from 'express';
 import { getUser } from 'src/auth/getUser.decorator';
 import { Guard } from 'src/auth/useGuard';
 import { commonMessages } from 'src/common/erroeMessages';
@@ -18,8 +27,12 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post('join')
-  join(@Body() data: JoinDTO): Promise<JoinOutput> {
-    return this.userService.join(data);
+  async join(
+    @getUser() user: User,
+    @Body() data: JoinDTO,
+    @Res() res: Response,
+  ) {
+    return this.userService.join(user, data, res);
   }
 
   @Post('login')

@@ -65,7 +65,6 @@ export class AuthService {
         code,
       },
     };
-    console.log(this.configService.get('MAIL_KEY'));
     sendGridMail.setApiKey(this.configService.get('MAIL_KEY'));
     await sendGridMail.send(email);
   }
@@ -218,5 +217,7 @@ export class AuthService {
         kakao_account: { email },
       },
     } = data;
+
+    // console.dir(data, { depth: 50 });
   }
 }

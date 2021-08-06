@@ -49,7 +49,6 @@ export class AuthController {
   @Get('test')
   async test(@Query() data2: any) {
     try {
-      console.log(data2.code);
       const data = await axios({
         method: 'post',
         url: 'https://kauth.kakao.com/oauth/token',
@@ -75,6 +74,7 @@ export class AuthController {
       //   }),
       // });
       const token = data.data.access_token;
+      console.log(token);
 
       // const d = await axios.post('https://kauth.kakao.com/oauth/token', {
       //   Headers: {

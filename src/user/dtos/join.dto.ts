@@ -1,5 +1,5 @@
 import { OmitType } from '@nestjs/swagger';
-import { IsBoolean, IsOptional } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 import { CommonOutput } from 'src/common/dtos/common.dto';
 import { User } from '../entities/user.entity';
 
@@ -13,6 +13,14 @@ export class JoinDTO extends OmitType(User, [
   @IsBoolean({ message: 'change를 올바른 형식으로 입력하세요.' })
   @IsOptional()
   change?: string;
+
+  @IsString()
+  @IsOptional()
+  whatSocial?: string;
+
+  @IsString()
+  @IsOptional()
+  socialToken?: string;
 }
 
 export class JoinOutput extends CommonOutput {

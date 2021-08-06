@@ -30,4 +30,9 @@ export const commonMessages = {
     ok: false,
     error: '인증이 실패했습니다.',
   },
+
+  commonNorFail: (val) => ({
+    ok: false,
+    error: `${val} 실패하였습니다.`,
+  }),
 };

@@ -1,4 +1,4 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Res } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AuthService } from 'src/auth/auth.service';
 import { Auth } from 'src/auth/entities/auth.entity';
@@ -6,13 +6,15 @@ import { commonMessages } from 'src/common/erroeMessages';
 import { Not, Repository } from 'typeorm';
 import { AuthDTO, AuthOutput } from './dtos/auth.dto';
 import { FindPasswordDTO, FindPasswordOutput } from './dtos/findPassword.dto';
-import { JoinDTO, JoinOutput } from './dtos/join.dto';
+import { JoinDTO } from './dtos/join.dto';
 import { LoginDTO } from './dtos/login.dto';
 import { UpdateUserDTO } from './dtos/updateUser.dto';
 import { User } from './entities/user.entity';
 import * as uuid from 'uuid';
 import { RefreshTokenDTO } from './dtos/refreshToken.dto';
 import { ConfirmExistDTO, ConfirmExistOutput } from './dtos/confirmExist.dto';
+import axios from 'axios';
+import { Response } from 'express';
 
 @Injectable()
 export class UserService {
@@ -23,22 +25,78 @@ export class UserService {
     @InjectRepository(Auth) private readonly auth: Repository<Auth>,
   ) {}
 
-  async join(data: JoinDTO): Promise<JoinOutput> {
-    try {
-      const newUser = await this.registerUser(data);
-      if (newUser.email) {
-        const verify = await this.authService.makeVerifyCode(newUser);
-        await this.authService.sendMail(newUser.email, verify.code);
+  async join(exist: User, data: JoinDTO, @Res() res: Response): Promise<any> {
+    let info;
+    let refreshToken;
+    let accessToken;
+    const after = [];
+    const before = [];
+
+    const confirmData = this.checkAtLeastOneExist(data, [
+      'socialToken',
+      'email',
+    ]);
+
+    if ('whatSocial' in data) {
+      if (!('socialToken' in data)) {
+        return res.json(commonMessages.commonNorFail('회원가입을'));
       }
-      return {
+    }
+
+    if (!confirmData) {
+      return res.json(commonMessages.commonNorFail('회원가입을'));
+    }
+
+    try {
+      if ('socialToken' in data) {
+        if (!('whatSocial' in data)) {
+          return res.json(commonMessages.commonNorFail('회원가입을'));
+        }
+        if (data.whatSocial === 'kakao') {
+          info = await this.getKakaoUserInfo(data.socialToken);
+        } else if (data.whatSocial === 'naver') {
+          info = await this.getNaverUserInfo(data.socialToken);
+        }
+        refreshToken = this.authService.sign(
+          'id',
+          info.nickName,
+          60 * 60 ** 24 * 7,
+        );
+        accessToken = this.authService.sign('nickName', info.nickName, 60 * 60);
+        info.refreshToken = refreshToken;
+        const userExist = await this.user.findOne({ socialId: info.socialId });
+
+        if (userExist) {
+          for (let i in data) {
+            if (data[i] !== userExist[i]) {
+              after.push({ [i]: data[i] });
+              before.push({ [i]: userExist[i] || '입력안됨' });
+            }
+          }
+        }
+      }
+      info = data;
+      const newOne = await this.user.save(this.user.create(info));
+
+      res.json({
         ok: true,
-        ...(data.email && {
-          message: '가입한 이메일로 인증번호가 발송되었습니다.',
+        ...(accessToken && { accessToken }),
+        ...(refreshToken && { refreshToken }),
+        ...(before.length > 0 && { before }),
+        ...(after.length > 0 && { after }),
+        ...(after.length > 0 && {
+          message: '회원정보가 변경됩니다. 변경하겠습니까?',
         }),
-      };
+      });
+
+      if (!info.socialToken && info.email) {
+        const verify = await this.authService.makeVerifyCode(newOne);
+        await this.authService.sendMail(info.email, verify.code);
+      }
+      return;
     } catch (e) {
       console.log(e);
-      return commonMessages.commonFail('회원가입이');
+      return res.json(commonMessages.commonFail('회원가입이'));
     }
   }
 
@@ -190,14 +248,11 @@ export class UserService {
           exist = await this.findByCondition({
             [item]: data[item],
           });
-          const a = await this.user.findOne({ where: { [item]: data[item] } });
-          console.log(item, data[item], a);
         } else {
           exist = await this.exceptMeFound(user.id, {
             [item]: data[item],
           });
         }
-        console.log(exist);
         if (exist) {
           return commonMessages.commonExist(item);
         }
@@ -224,5 +279,88 @@ export class UserService {
 
   async deleteToken(id) {
     return this.user.save({ id, refreshToken: null });
+  }
+
+  async userUpdateOrCreate(exist: User, data: object): Promise<User> {
+    let realExist;
+    if (exist) {
+      for (let i in data) {
+        exist[i] = data[i];
+        realExist = exist;
+      }
+    } else {
+      realExist = this.user.create(data);
+    }
+    const newOne = await this.user.save(realExist);
+    return newOne;
+  }
+
+  checkAtLeastOneExist(data: object, atLeast: string[]): number {
+    let count = 0;
+    for (let i in data) {
+      for (let j of atLeast) {
+        if (j !== i) continue;
+        count += data[j].length;
+      }
+    }
+
+    return count;
+  }
+
+  checkAllExist(data: object): number {
+    let count = 0;
+    for (let i in data) {
+      if (data[i].length) return 0;
+      count += data[i].length;
+    }
+    return count;
+  }
+
+  async getKakaoUserInfo(token): Promise<object> {
+    const data = await axios.get('https://kapi.kakao.com/v2/user/me', {
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        authorization: `Bearer ${token}`,
+      },
+    });
+
+    const {
+      data: {
+        id,
+        properties: { nickname },
+        kakao_account: { email },
+      },
+    } = data;
+
+    const result = {
+      ...(id && { socialId: id }),
+      ...(nickname && { nickName: nickname }),
+      ...(email && { email }),
+    };
+
+    return result;
+  }
+
+  async getNaverUserInfo(token): Promise<object> {
+    const data = await axios.get('https://openapi.naver.com/v1/nid/me', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const {
+      ok,
+      userInfo: { id, nickname, email, mobile },
+    } = data.data.response;
+
+    if (!ok) return ok;
+
+    const result = {
+      ...(id && { socialId: id }),
+      ...(email && { email }),
+      ...(nickname && { nickName: nickname }),
+      ...(mobile && { phoneNumber: mobile }),
+    };
+
+    return result;
   }
 }

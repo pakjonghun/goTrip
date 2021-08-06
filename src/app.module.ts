@@ -89,13 +89,13 @@ import { Image } from './trip/entities/image.entity';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(
-        JoinDataConfirmMiddleWare,
-        JoinExistConfirmMiddleWare,
-        SocialLoginMiddleWare,
-      )
-      .forRoutes('user/join');
+    // consumer
+    //   .apply(
+    //     JoinDataConfirmMiddleWare,
+    //     JoinExistConfirmMiddleWare,
+    //     SocialLoginMiddleWare,
+    //   )
+    //   .forRoutes('user/join');
 
     consumer.apply(LoginDataConfirmMiddleWare).forRoutes('user/login');
 
