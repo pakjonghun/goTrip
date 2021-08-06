@@ -1,8 +1,8 @@
-import { forwardRef, Global } from '@nestjs/common';
+import { forwardRef } from '@nestjs/common';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from 'src/auth/auth.module';
-import { Auth } from 'src/auth/entities/auth.entity';
+import { PhoneAuthEntity } from 'src/auth/entities/phoneAuth.entity';
 import { User } from './entities/user.entity';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
@@ -10,7 +10,7 @@ import { UserService } from './user.service';
   controllers: [UserController],
   providers: [UserService],
   imports: [
-    TypeOrmModule.forFeature([User, Auth]),
+    TypeOrmModule.forFeature([User, PhoneAuthEntity]),
     forwardRef(() => AuthModule),
   ],
   exports: [UserService],

@@ -13,7 +13,7 @@ import { Injectable } from '@nestjs/common';
 @Entity()
 @Injectable()
 export class User extends CoreEntity {
-  @Column({ unique: true })
+  @Column()
   @IsString({ message: '올바른 닉네임 형식이 아닙니다.' })
   @Matches(/^[[ㄱ-ㅎㅏ-ㅣ가-힣a-z0-9!-=\S]*$/i, {
     message: '닉네임은 형식에 맞는 값을 사용하세요.',
@@ -57,16 +57,11 @@ export class User extends CoreEntity {
 
   @Column({ nullable: true })
   @IsOptional()
-  @IsString({
-    message: '올바른 소셜아이디 형식이 아닙니다. 문자열로 바꿔서 보내주세요',
-  })
-  socialId?: string;
+  socialId?: number;
 
   @BeforeInsert()
   @BeforeUpdate()
   async hashPassword(): Promise<void> {
-    console.log(111111111);
-    console.log(this.pwd);
     if (this.pwd) {
       this.pwd = await bcrypt.hash(this.pwd, 10);
     }

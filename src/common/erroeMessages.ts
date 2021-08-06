@@ -30,6 +30,10 @@ export const commonMessages = {
     ok: false,
     error: '인증이 실패했습니다.',
   },
+  commonWrongConfirmPassword: {
+    ok: false,
+    error: '비밀번호와 비밀번호 확인이 같지 않습니다.',
+  },
 
   commonNorFail: (val) => ({
     ok: false,

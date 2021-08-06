@@ -4,20 +4,23 @@ import {
   Get,
   Post,
   Put,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { getUser } from 'src/auth/getUser.decorator';
 import { Guard } from 'src/auth/useGuard';
-import { commonMessages } from 'src/common/erroeMessages';
-import { AuthDTO, AuthOutput } from './dtos/auth.dto';
+import {
+  ChangePasswordDTO,
+  ChangePasswordOutput,
+} from './dtos/changePassword.dto';
 import { ConfirmExistDTO, ConfirmExistOutput } from './dtos/confirmExist.dto';
-import { FindPasswordDTO, FindPasswordOutput } from './dtos/findPassword.dto';
 import { JoinDTO, JoinOutput } from './dtos/join.dto';
-import { LoginDTO } from './dtos/login.dto';
+import { LoginDTO, LoginOutput } from './dtos/login.dto';
 import { MeOutput } from './dtos/me.dto';
 import { RefreshTokenDTO } from './dtos/refreshToken.dto';
+import { SocialDTO, SocialOutput } from './dtos/socialLogin.dto';
 import { UpdateUserDTO } from './dtos/updateUser.dto';
 import { User } from './entities/user.entity';
 import { UserService } from './user.service';
@@ -27,28 +30,48 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post('join')
-  async join(
-    @getUser() user: User,
-    @Body() data: JoinDTO,
+  async join(@Body() data: JoinDTO): Promise<JoinOutput> {
+    return this.userService.join(data);
+  }
+
+  @Post('kakao')
+  async kakaoLogin(
     @Res() res: Response,
-  ) {
-    return this.userService.join(user, data, res);
+    @Req() req: Request,
+    @Body() data: SocialDTO,
+  ): Promise<SocialOutput> {
+    return this.userService.socialLoginService(req, res, data);
+  }
+
+  @Post('naver')
+  async naverLogin(
+    @Res() res: Response,
+    @Req() req: Request,
+    @Body() data: SocialDTO,
+  ): Promise<SocialOutput> {
+    return this.userService.socialLoginService(req, res, data);
+  }
+
+  @Post('confirmexist')
+  async confirmExist(
+    @getUser() user: User,
+    @Body() data: ConfirmExistDTO,
+  ): Promise<ConfirmExistOutput> {
+    return this.userService.confirmExist(user, data);
   }
 
   @Post('login')
-  login(@Body() data: LoginDTO) {
+  login(@Body() data: LoginDTO): Promise<LoginOutput> {
     return this.userService.login(data);
   }
 
   @UseGuards(Guard)
-  @Post('auth')
-  auth(@getUser() user: User, @Body() data: AuthDTO): Promise<AuthOutput> {
-    return this.userService.authEmail(user, data);
-  }
-
-  @Put('findpassword')
-  findPassword(@Body() data: FindPasswordDTO): Promise<FindPasswordOutput> {
-    return this.userService.findPassword(data);
+  @Put('changepassword')
+  changePassword(
+    @getUser() user: User,
+    @Body() data: ChangePasswordDTO,
+  ): Promise<ChangePasswordOutput> {
+    return this.userService.changePassword(user, data);
   }
 
   @UseGuards(Guard)
@@ -61,14 +84,6 @@ export class UserController {
   @Post('refreshtoken')
   refreshToken(@getUser() user: User, @Body() refreshToken: RefreshTokenDTO) {
     return this.userService.refrechToken(user, refreshToken);
-  }
-
-  @Post('confirmexist')
-  async confirmExist(
-    @getUser() user: User,
-    @Body() data: ConfirmExistDTO,
-  ): Promise<ConfirmExistOutput> {
-    return this.userService.confirmExist(user, data);
   }
 
   @UseGuards(Guard)

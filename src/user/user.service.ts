@@ -1,20 +1,23 @@
-import { forwardRef, Inject, Injectable, Res } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AuthService } from 'src/auth/auth.service';
-import { Auth } from 'src/auth/entities/auth.entity';
 import { commonMessages } from 'src/common/erroeMessages';
 import { Not, Repository } from 'typeorm';
-import { AuthDTO, AuthOutput } from './dtos/auth.dto';
-import { FindPasswordDTO, FindPasswordOutput } from './dtos/findPassword.dto';
-import { JoinDTO } from './dtos/join.dto';
-import { LoginDTO } from './dtos/login.dto';
+import { JoinDTO, JoinOutput } from './dtos/join.dto';
+import { LoginDTO, LoginOutput } from './dtos/login.dto';
 import { UpdateUserDTO } from './dtos/updateUser.dto';
 import { User } from './entities/user.entity';
-import * as uuid from 'uuid';
 import { RefreshTokenDTO } from './dtos/refreshToken.dto';
 import { ConfirmExistDTO, ConfirmExistOutput } from './dtos/confirmExist.dto';
 import axios from 'axios';
+import { PhoneAuthEntity } from 'src/auth/entities/phoneAuth.entity';
+import { SocialDTO, SocialOutput } from './dtos/socialLogin.dto';
+import { Request } from 'express-serve-static-core';
 import { Response } from 'express';
+import {
+  ChangePasswordDTO,
+  ChangePasswordOutput,
+} from './dtos/changePassword.dto';
 
 @Injectable()
 export class UserService {
@@ -22,307 +25,23 @@ export class UserService {
     @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
     @InjectRepository(User) private readonly user: Repository<User>,
-    @InjectRepository(Auth) private readonly auth: Repository<Auth>,
+    @InjectRepository(PhoneAuthEntity)
+    private readonly phoneAuth: Repository<PhoneAuthEntity>,
   ) {}
 
-  async join(exist: User, data: JoinDTO, @Res() res: Response): Promise<any> {
-    let info;
-    let refreshToken;
-    let accessToken;
-    const after = [];
-    const before = [];
-
-    const confirmData = this.checkAtLeastOneExist(data, [
-      'socialToken',
-      'email',
-    ]);
-
-    if ('whatSocial' in data) {
-      if (!('socialToken' in data)) {
-        return res.json(commonMessages.commonNorFail('회원가입을'));
-      }
-    }
-
-    if (!confirmData) {
-      return res.json(commonMessages.commonNorFail('회원가입을'));
-    }
-
+  async getKakaoUserInfo(res: Response, token: string): Promise<object> {
+    let data;
     try {
-      if ('socialToken' in data) {
-        if (!('whatSocial' in data)) {
-          return res.json(commonMessages.commonNorFail('회원가입을'));
-        }
-        if (data.whatSocial === 'kakao') {
-          info = await this.getKakaoUserInfo(data.socialToken);
-        } else if (data.whatSocial === 'naver') {
-          info = await this.getNaverUserInfo(data.socialToken);
-        }
-        refreshToken = this.authService.sign(
-          'id',
-          info.nickName,
-          60 * 60 ** 24 * 7,
-        );
-        accessToken = this.authService.sign('nickName', info.nickName, 60 * 60);
-        info.refreshToken = refreshToken;
-        const userExist = await this.user.findOne({ socialId: info.socialId });
-
-        if (userExist) {
-          for (let i in data) {
-            if (data[i] !== userExist[i]) {
-              after.push({ [i]: data[i] });
-              before.push({ [i]: userExist[i] || '입력안됨' });
-            }
-          }
-        }
-      }
-      info = data;
-      const newOne = await this.user.save(this.user.create(info));
-
-      res.json({
-        ok: true,
-        ...(accessToken && { accessToken }),
-        ...(refreshToken && { refreshToken }),
-        ...(before.length > 0 && { before }),
-        ...(after.length > 0 && { after }),
-        ...(after.length > 0 && {
-          message: '회원정보가 변경됩니다. 변경하겠습니까?',
-        }),
+      data = await axios.get('https://kapi.kakao.com/v2/user/me', {
+        headers: {
+          'content-type': 'application/x-www-form-urlencoded',
+          authorization: `Bearer ${token}`,
+        },
       });
-
-      if (!info.socialToken && info.email) {
-        const verify = await this.authService.makeVerifyCode(newOne);
-        await this.authService.sendMail(info.email, verify.code);
-      }
-      return;
     } catch (e) {
       console.log(e);
-      return res.json(commonMessages.commonFail('회원가입이'));
+      return res.json(commonMessages.commonFail('소셜 인증이 '));
     }
-  }
-
-  async login({ email, pwd }: LoginDTO) {
-    try {
-      const userExist = await this.user.findOne(
-        { email },
-        { select: ['pwd', 'nickName', 'id'] },
-      );
-      if (!userExist) {
-        return commonMessages.commonLoginFail;
-      }
-
-      if (userExist) {
-        const passwordCorrect = await userExist.checkPassword(pwd);
-        if (!passwordCorrect) {
-          return commonMessages.commonLoginFail;
-        }
-
-        if (passwordCorrect) {
-          const activeToken = this.authService.sign(
-            'nickName',
-            userExist.nickName,
-            60 * 60,
-          );
-          const refreshToken = this.authService.sign(
-            'id',
-            userExist.id,
-            60 * 60 * 24 * 7,
-          );
-
-          await this.user.save({
-            id: userExist.id,
-            refreshToken: String(refreshToken),
-          });
-
-          return {
-            ok: true,
-            activeToken,
-            refreshToken,
-          };
-        }
-      }
-    } catch (e) {
-      console.log(e);
-      return commonMessages.commonFail('로그인이');
-    }
-  }
-
-  async authEmail(loginUser: User, { code }: AuthDTO): Promise<AuthOutput> {
-    try {
-      const exist = await this.auth.findOne(
-        { user: loginUser, code },
-        { select: ['id'] },
-      );
-
-      if (!exist) {
-        return commonMessages.commonAuthFail;
-      }
-
-      if (exist) {
-        await this.auth.delete(exist.id);
-        await this.user.save({ id: loginUser.id, verified: true });
-      }
-      return commonMessages.commonSuccess;
-    } catch (e) {
-      console.log(e);
-      return commonMessages.commonFail('이메일 인증이');
-    }
-  }
-
-  async findPassword({ email }: FindPasswordDTO): Promise<FindPasswordOutput> {
-    try {
-      const exist = await this.findByCondition({ ['email']: email });
-      if (!exist) {
-        return commonMessages.commonNotFuond('이메일을');
-      }
-      const newPassword = uuid.v4();
-      await this.authService.sendMail(exist.email, newPassword);
-
-      exist.pwd = newPassword;
-      await this.user.save(exist);
-      return {
-        ok: true,
-        message:
-          '이메일로 변경된 비밀번호가 발송되었습니다. 이메일을 확인하세요.',
-      };
-    } catch (e) {
-      console.log(e);
-      return commonMessages.commonAuthFail;
-    }
-  }
-
-  async updateUser(user: User, data: UpdateUserDTO) {
-    const isEmailDifferent = 'email' in data && data.email !== user.email;
-    try {
-      if (isEmailDifferent) {
-        const newVerify = await this.authService.makeVerifyCode(User);
-        await this.authService.sendMail(data.email, newVerify.code);
-      }
-
-      let activeToken;
-      if ('nickName' in data && data.nickName !== user.nickName) {
-        activeToken = this.authService.sign('nickName', data.nickName, 60 * 60);
-      }
-
-      for (let i in data) {
-        if (i === 'passwordConfirm') continue;
-
-        user[i] = data[i];
-      }
-
-      await this.user.save(user);
-
-      return {
-        ok: true,
-        ...(isEmailDifferent && {
-          message: '변경된 이메일로 인증번호가 발송되었습니다.',
-        }),
-        ...(activeToken && { activeToken }),
-      };
-    } catch (e) {
-      console.log(e);
-      return commonMessages.commonFail('사용자 정보 업데이트가');
-    }
-  }
-
-  async refrechToken(user: User, data: RefreshTokenDTO) {
-    try {
-      const activeToken = this.authService.sign('nickName', user.nickName, 1);
-      return {
-        ok: true,
-        activeToken,
-      };
-    } catch (e) {
-      console.log(e);
-      return commonMessages.commonFail('인증이');
-    }
-  }
-
-  async confirmExist(
-    user: User,
-    data: ConfirmExistDTO,
-  ): Promise<ConfirmExistOutput> {
-    try {
-      for (let item of Object.keys(data)) {
-        let exist;
-        if (!user) {
-          exist = await this.findByCondition({
-            [item]: data[item],
-          });
-        } else {
-          exist = await this.exceptMeFound(user.id, {
-            [item]: data[item],
-          });
-        }
-        if (exist) {
-          return commonMessages.commonExist(item);
-        }
-      }
-      return commonMessages.commonSuccess;
-    } catch (e) {
-      console.log(e);
-      return commonMessages.commonFail('중복확인이');
-    }
-  }
-
-  async registerUser(data: JoinDTO): Promise<User> {
-    const newUser = this.user.create(data);
-    return this.user.save(newUser);
-  }
-
-  async findByCondition(condition: object): Promise<User> {
-    return this.user.findOne(condition);
-  }
-
-  async exceptMeFound(id: number, cretical?: object): Promise<User> {
-    return this.user.findOne({ where: { id: Not(id), ...cretical } });
-  }
-
-  async deleteToken(id) {
-    return this.user.save({ id, refreshToken: null });
-  }
-
-  async userUpdateOrCreate(exist: User, data: object): Promise<User> {
-    let realExist;
-    if (exist) {
-      for (let i in data) {
-        exist[i] = data[i];
-        realExist = exist;
-      }
-    } else {
-      realExist = this.user.create(data);
-    }
-    const newOne = await this.user.save(realExist);
-    return newOne;
-  }
-
-  checkAtLeastOneExist(data: object, atLeast: string[]): number {
-    let count = 0;
-    for (let i in data) {
-      for (let j of atLeast) {
-        if (j !== i) continue;
-        count += data[j].length;
-      }
-    }
-
-    return count;
-  }
-
-  checkAllExist(data: object): number {
-    let count = 0;
-    for (let i in data) {
-      if (data[i].length) return 0;
-      count += data[i].length;
-    }
-    return count;
-  }
-
-  async getKakaoUserInfo(token): Promise<object> {
-    const data = await axios.get('https://kapi.kakao.com/v2/user/me', {
-      headers: {
-        'content-type': 'application/x-www-form-urlencoded',
-        authorization: `Bearer ${token}`,
-      },
-    });
 
     const {
       data: {
@@ -341,12 +60,19 @@ export class UserService {
     return result;
   }
 
-  async getNaverUserInfo(token): Promise<object> {
-    const data = await axios.get('https://openapi.naver.com/v1/nid/me', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  async getNaverUserInfo(res, token): Promise<object> {
+    let data;
+    try {
+      data = await axios.get('https://openapi.naver.com/v1/nid/me', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    } catch (e) {
+      console.log(e);
+      return res.json(commonMessages.commonFail('소셜 인증이 '));
+    }
+
     const {
       ok,
       userInfo: { id, nickname, email, mobile },
@@ -362,5 +88,247 @@ export class UserService {
     };
 
     return result;
+  }
+
+  hangleChanger(key) {
+    if (key === 'nickName') {
+      return '닉네임';
+    } else if (key === 'phoneNumber') {
+      return '연락처';
+    }
+  }
+
+  async onlyExistCheck(data: object): Promise<[string, User]> {
+    for (let i in data) {
+      if (i === 'phoneNumber' || i === 'socialId' || i === 'email') {
+        const exist = await this.user.findOne(
+          { [i]: data[i] },
+          { select: ['id', 'email', 'pwd', 'nickName', 'phoneNumber'] },
+        );
+        if (exist) {
+          return [i, exist];
+        }
+      }
+      continue;
+    }
+  }
+
+  async join(data: JoinDTO): Promise<JoinOutput> {
+    try {
+      if (data.pwd !== data.pwdConfirm) {
+        return commonMessages.commonWrongConfirmPassword;
+      }
+
+      const [key, exist] = await this.onlyExistCheck(data);
+      if (exist) {
+        return commonMessages.commonExist(this.hangleChanger(key));
+      }
+
+      await this.user.save(this.user.create(data));
+      return commonMessages.commonSuccess;
+    } catch (e) {
+      console.log(e);
+      return commonMessages.commonFail('회원가입을');
+    }
+  }
+
+  async socialLoginService(
+    req: Request,
+    res: Response,
+    { change, socialToken }: SocialDTO,
+  ): Promise<SocialOutput> {
+    const path = req.path.split('/').pop();
+    const after = [];
+    const before = [];
+    let userInfo;
+
+    if (path === 'kakao') {
+      userInfo = await this.getKakaoUserInfo(res, socialToken);
+    }
+    userInfo = await this.getNaverUserInfo(res, socialToken);
+
+    try {
+      const [key, exist] = await this.onlyExistCheck(userInfo);
+
+      if (key === 'socialId') {
+        for (let item in userInfo) {
+          if (exist[item] !== userInfo[item]) {
+            before.push(exist[item]);
+            after.push(userInfo[item]);
+          }
+        }
+      }
+
+      if (exist) {
+        return commonMessages.commonExist(this.hangleChanger(key));
+      }
+
+      const accessToken = this.authService.sign(
+        'nickName',
+        userInfo['nickName'],
+        60 * 60,
+      );
+      const refreshToken = this.authService.sign(
+        'nickName',
+        userInfo['nickName'],
+        60 * 60 * 24 * 7,
+      );
+
+      let userObj;
+
+      if (change) {
+        after.splice(after.length);
+        userObj = exist;
+
+        for (let i in userInfo) {
+          userObj[i] = userInfo[i];
+        }
+      } else {
+        userObj = this.user.create(userInfo);
+      }
+
+      userObj['refreshToken'] = String(refreshToken);
+
+      await this.user.save(this.user.create(userInfo));
+
+      return {
+        ok: true,
+        ...(after.length && {
+          error: '프로파일이 업데이트 됩니다. 업데이트 하시겠습니까?',
+        }),
+        ...(after.length && { after }),
+        ...(after.length && { before }),
+        refreshToken: String(refreshToken),
+        accessToken: String(accessToken),
+      };
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  async login({ email, pwd }: LoginDTO): Promise<LoginOutput> {
+    try {
+      const [key, exist] = await this.onlyExistCheck({ email });
+
+      if (!exist) {
+        return commonMessages.commonLoginFail;
+      }
+
+      if (exist) {
+        const passwordCorrect = await exist.checkPassword(pwd);
+        if (!passwordCorrect) {
+          return commonMessages.commonLoginFail;
+        }
+
+        if (passwordCorrect) {
+          const activeToken = this.authService.sign(
+            'nickName',
+            exist.nickName,
+            60 * 60,
+          );
+          const refreshToken = this.authService.sign(
+            'id',
+            exist.id,
+            60 * 60 * 24 * 7,
+          );
+
+          exist['refreshToken'] = String(refreshToken);
+          delete exist.pwd;
+          await this.user.save(exist);
+
+          return {
+            ok: true,
+            accessToken: String(activeToken),
+            refreshToken: String(refreshToken),
+          };
+        }
+      }
+    } catch (e) {
+      console.log(e);
+      return commonMessages.commonFail('로그인이');
+    }
+  }
+
+  async changePassword(
+    user,
+    { pwd, pwdConfirm }: ChangePasswordDTO,
+  ): Promise<ChangePasswordOutput> {
+    if (pwd !== pwdConfirm) {
+      return commonMessages.commonWrongConfirmPassword;
+    }
+    try {
+      user.pwd = pwd;
+      await this.user.save(user);
+
+      return commonMessages.commonSuccess;
+    } catch (e) {
+      console.log(e);
+      return commonMessages.commonFail('비밀번호 변경이');
+    }
+  }
+
+  async updateUser(updateUser: User, data: UpdateUserDTO) {
+    let activeToken;
+    if (data.pwd !== data.pwdConfirm) {
+      return commonMessages.commonWrongConfirmPassword;
+    }
+    try {
+      for (let i in data) {
+        updateUser[i] = data[i];
+        if (i === 'nickName') {
+          activeToken = this.authService.sign('nickName', data[i], 60 * 60);
+        }
+      }
+      delete updateUser.pwd;
+      await this.user.save(updateUser);
+      return {
+        ok: true,
+        activeToken: String(activeToken),
+      };
+    } catch (e) {
+      console.log(e);
+      return commonMessages.commonFail('사용자 정보 업데이트가');
+    }
+  }
+
+  async refrechToken(user: User, data: RefreshTokenDTO) {
+    try {
+      const activeToken = this.authService.sign(
+        'nickName',
+        user.nickName,
+        60 * 60,
+      );
+      return {
+        ok: true,
+        activeToken,
+      };
+    } catch (e) {
+      console.log(e);
+      return commonMessages.commonFail('인증이');
+    }
+  }
+
+  async confirmExist(
+    user: User,
+    data: ConfirmExistDTO,
+  ): Promise<ConfirmExistOutput> {
+    try {
+      const [key, exist] = await this.onlyExistCheck(data);
+      if (exist) {
+        return commonMessages.commonExist(this.hangleChanger(key));
+      }
+      return commonMessages.commonSuccess;
+    } catch (e) {
+      console.log(e);
+      return commonMessages.commonFail('중복확인이');
+    }
+  }
+
+  async findByCondition(condition: object): Promise<User> {
+    return this.user.findOne(condition);
+  }
+
+  async deleteToken(id) {
+    return this.user.save({ id, refreshToken: null });
   }
 }
