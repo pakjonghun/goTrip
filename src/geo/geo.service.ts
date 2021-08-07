@@ -1,12 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Course } from 'src/trip/entities/course.entity';
+import { CourseRoute } from 'src/trip/entities/courseRoute.entity';
+import { Location } from 'src/trip/entities/location.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
 export class GeoService {
   constructor(
     @InjectRepository(Course) private readonly courses: Repository<Course>,
+    @InjectRepository(Location)
+    private readonly locations: Repository<Location>,
+    @InjectRepository(CourseRoute)
+    private readonly courseRoutes: Repository<CourseRoute>,
   ) {}
 
   // 지역코드, 카테고리 기반으로 DB에서 코스들을 가져온다
@@ -15,7 +21,6 @@ export class GeoService {
     const allData = await this.courses
       .createQueryBuilder()
       .where('areacode IN (:...areaCode)', { areaCode })
-      .andWhere('contenttypeid = :contenttypeid', { contenttypeid })
       .andWhere('cat2 IN (:...category)', { category })
       .getMany();
 
@@ -49,23 +54,33 @@ export class GeoService {
       return { ok: false, error: '조건에 맞는 데이터가 없습니다.' };
     }
 
-    // 선택지가 4개를 초과할 시, 4개까지 줄여서 보내주기
-    // 4개 이하일 시, 그냥 보내주기
-    // Array.splice(랜덤시작인덱스, 1개만 제거)[0] 제거한 요소들의 배열을 반환하니 0번째 요소가 뽑은 숫자
-    if (result.length > 4) {
-      const resultWhenOverFour = [];
-      while (resultWhenOverFour.length < 4) {
-        const poppedCourse = result.splice(
-          Math.floor(Math.random() * result.length),
-          1,
-        )[0];
-        resultWhenOverFour.push(poppedCourse);
-      }
+    const poppedCourse = result.splice(
+      Math.floor(Math.random() * result.length),
+      1,
+    )[0];
 
-      return { ok: true, data: resultWhenOverFour };
+    poppedCourse['courseImages'] = [
+      poppedCourse.firstimage,
+      poppedCourse.firstimage2,
+    ];
+
+    delete poppedCourse.firstimage;
+    delete poppedCourse.firstimage2;
+
+    poppedCourse['course'] = [];
+
+    const courseRouteArr = await this.courseRoutes.find({
+      contentid: poppedCourse.contentid,
+    });
+
+    for (const i of courseRouteArr) {
+      const locationInRoute = await this.locations.find({
+        contentid: +i.subcontentid,
+      });
+      poppedCourse.course.push(locationInRoute);
     }
 
-    return { ok: true, data: result };
+    return { ok: true, data: poppedCourse };
   }
 
   getDistanceFromLatLonInKm(lat1, lng1, lat2, lng2) {
