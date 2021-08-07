@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Post, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Post,
+  Query,
+  Req,
+  Res,
+} from '@nestjs/common';
 import axios from 'axios';
 import { URLSearchParams } from 'url';
 import { AuthService } from './auth.service';
@@ -9,10 +18,10 @@ import { User } from 'src/user/entities/user.entity';
 import {
   FindPasswordDTO,
   FindPasswordOutput,
-} from 'src/user/dtos/findPassword.dto';
+} from 'src/auth/dtos/findPassword.dto';
 import { TempTokenDTO } from './dtos/tempToken.dto';
 import { Request, Response } from 'express';
-import qs from 'qs';
+import * as qs from 'qs';
 
 @Controller('auth')
 export class AuthController {
@@ -25,19 +34,20 @@ export class AuthController {
   @Delete('phoneconfirm')
   phoneConfirm(
     @Req() req: Request,
-    @getUser() user: User,
     @Body() data: PhoneConfirmDTO,
   ): Promise<PhoneConfirmOutput> {
-    return this.authService.phoneConfirm(req, user, data);
+    return this.authService.phoneConfirm(data);
   }
 
   @Post('findpassword')
   findPassword(@Body() data: FindPasswordDTO): Promise<FindPasswordOutput> {
-    return this.authService.phone(data);
+    return this.authService.forPasswordPhone(data);
   }
 
   @Post('temptoken')
-  tempToken(@Body() data: TempTokenDTO) {}
+  tempToken(@Body() data: TempTokenDTO, @Req() req: Request) {
+    return this.authService.tempToken(data);
+  }
 
   @Get('kakao')
   kakaotoc(@Res() res: Response) {
@@ -47,10 +57,26 @@ export class AuthController {
       response_type: 'code',
     };
 
-    qs.stringify(config);
     const rest = new URLSearchParams(config).toString();
     const url = `https://kauth.kakao.com/oauth/authorize?${rest}`;
-    console.log(url);
     return res.redirect(url);
+  }
+
+  @Get('test')
+  async getData(@Query() data) {
+    const code = await axios({
+      method: 'POST',
+      headers: {
+        'Content-type': 'application/x-www-form-urlencoded',
+      },
+      url: 'https://kauth.kakao.com/oauth/token',
+      data: qs.stringify({
+        grant_type: 'authorization_code',
+        client_id: 'c7cc12486e000f61e2024be8dbc30e3c',
+        redirect_uri: 'http://localhost:5000/auth/test',
+        code: data.code,
+      }),
+    });
+    console.log(code.data);
   }
 }

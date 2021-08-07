@@ -1,7 +1,7 @@
 import { IsString, Length, Matches } from 'class-validator';
 import { CoreEntity } from 'src/common/entities/coreEntity';
 import { User } from 'src/user/entities/user.entity';
-import { Column, Entity, JoinColumn, OneToOne } from 'typeorm';
+import { BeforeInsert, BeforeUpdate, Column, Entity, ManyToOne } from 'typeorm';
 
 @Entity()
 export class PhoneAuthEntity extends CoreEntity {
@@ -14,7 +14,12 @@ export class PhoneAuthEntity extends CoreEntity {
   @Column({ unique: true })
   phoneNumber: string;
 
-  @OneToOne((type) => User)
-  @JoinColumn()
+  @ManyToOne((type) => User, (User) => User.codes)
   user?: User;
+
+  @BeforeUpdate()
+  @BeforeInsert()
+  insertCode() {
+    this.code = Math.floor(Math.random() * (999999 - 100000)) + 100000;
+  }
 }

@@ -83,6 +83,14 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(TokenMiddleWare)
-      .forRoutes('user/auth', 'user/refreshtoken', 'user/update');
+      .forRoutes(
+        'user/auth',
+        'user/refreshtoken',
+        'user/update',
+        'user/updateconfirm',
+        'user/changepassword',
+        'user/me',
+        'user/refreshtoken',
+      );
   }
 }

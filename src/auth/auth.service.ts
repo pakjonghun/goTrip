@@ -5,7 +5,6 @@ import { commonMessages } from 'src/common/erroeMessages';
 import { LessThan, Repository } from 'typeorm';
 import { UserService } from 'src/user/user.service';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
-import { Request } from 'express';
 import * as CryptoJS from 'crypto-js';
 import axios from 'axios';
 import { PhoneAuthDTO, PhoneAuthOutput } from './dtos/phoneAuth.dto';
@@ -13,6 +12,8 @@ import { PhoneAuthEntity } from './entities/phoneAuth.entity';
 import { PhoneConfirmDTO } from './dtos/phoneConfirm.dto';
 import { Interval } from '@nestjs/schedule';
 import { User } from 'src/user/entities/user.entity';
+import { FindPasswordDTO, FindPasswordOutput } from './dtos/findPassword.dto';
+import { TempTokenDTO } from './dtos/tempToken.dto';
 
 @Injectable()
 export class AuthService {
@@ -48,74 +49,92 @@ export class AuthService {
     }
   }
 
-  async phone({ email, phoneNumber }: PhoneAuthDTO): Promise<PhoneAuthOutput> {
-    const verifyCode = Math.floor(Math.random() * (999999 - 100000)) + 100000;
-
+  async forPasswordPhone({
+    phoneNumber,
+    email,
+  }: FindPasswordDTO): Promise<FindPasswordOutput> {
     try {
-      let passwordUser;
-      if (email) {
-        passwordUser = await this.user.findOne({ email });
-        if (!passwordUser) {
-          return commonMessages.commonNotFuond('이메일을');
-        }
-      }
-
-      let exist = await this.phoneAuth.findOne({ phoneNumber });
+      const exist = await this.user.findOne({ email });
 
       if (!exist) {
-        await this.phoneAuth.save(
-          this.phoneAuth.create({
-            code: verifyCode,
-            phoneNumber,
-            user: passwordUser,
-          }),
-        );
+        return commonMessages.commonNotFuond('등록되지 않은 이메일 입니다.');
       }
 
-      exist.code = verifyCode;
-      exist.updatedAt = passwordUser;
-      await this.phoneAuth.save(exist);
+      let phoneCodeAuth = await this.phoneAuth.findOne({ phoneNumber });
+      if (!phoneCodeAuth) {
+        phoneCodeAuth = this.phoneAuth.create({
+          phoneNumber,
+        });
+      }
 
-      await this.sendPhoneAuthNumber(phoneNumber, verifyCode);
-      return {
-        ok: true,
-      };
+      await this.phoneAuth.delete({ user: exist });
+
+      phoneCodeAuth.user = exist;
+      const phoneAuthCode = await this.phoneAuth.save(phoneCodeAuth);
+      await this.sendPhoneAuthNumber(phoneNumber, phoneAuthCode.code);
+
+      return commonMessages.commonSuccess;
     } catch (e) {
+      console.log(e);
       return commonMessages.commonFail('휴대폰 인증이');
     }
   }
 
-  async phoneConfirm(
-    req: Request,
-    user,
-    { code, phoneNumber }: PhoneConfirmDTO,
-  ) {
-    const path = req.path.split('/').pop();
-    let tempToken;
-
+  async phone({ phoneNumber }: PhoneAuthDTO): Promise<PhoneAuthOutput> {
     try {
-      const result = await this.phoneAuth.findOne(
-        { code, phoneNumber },
-        { relations: ['user'] },
-      );
-      if (!result) {
-        return commonMessages.commonNorFail('휴대폰 인증이');
-      }
-      if (user) {
-        user['verified'] = true;
-        await this.user.save(user);
-      }
-      await this.phoneAuth.delete(result.id);
-      if (path === 'temptoken') {
-        const nickName = result.user.nickName;
-        tempToken = this.sign('nickName', nickName, 60 * 10);
-        return {
-          ok: true,
-          tempToken: String(tempToken),
-        };
+      let exist = await this.phoneAuth.findOne({ phoneNumber });
+      if (!exist) {
+        exist = this.phoneAuth.create({ phoneNumber });
       }
 
+      const phoneAuthCodeObj = await this.phoneAuth.save(exist);
+      await this.sendPhoneAuthNumber(phoneNumber, phoneAuthCodeObj.code);
       return commonMessages.commonSuccess;
+    } catch (e) {
+      console.log(e);
+      return commonMessages.commonFail('휴대폰 인증이');
+    }
+  }
+
+  async phoneConfirm({ code, phoneNumber }: PhoneConfirmDTO) {
+    try {
+      const exist = await this.phoneAuth.findOne({ phoneNumber, code });
+      if (!exist) {
+        return commonMessages.commonAuthFail;
+      }
+      await this.phoneAuth.delete({ id: exist.id });
+      return commonMessages.commonSuccess;
+    } catch (e) {
+      console.log(e);
+      return commonMessages.commonFail('휴대폰 인증이');
+    }
+  }
+
+  async tempToken({ email, code, phoneNumber }: TempTokenDTO) {
+    try {
+      const currentUser = await this.user.findOne({ email });
+
+      if (!currentUser) {
+        return commonMessages.commonAuthFail;
+      }
+
+      const exist = await this.phoneAuth.findOne({
+        code,
+        phoneNumber,
+        user: currentUser,
+      });
+
+      if (!exist) {
+        return commonMessages.commonAuthFail;
+      }
+
+      await this.phoneAuth.delete({ id: exist.id });
+      const activeToken = this.sign('id', currentUser.id, 60 * 10);
+
+      return {
+        ok: true,
+        activeToken,
+      };
     } catch (e) {
       console.log(e);
       return commonMessages.commonFail('휴대폰 인증이');

@@ -1,22 +1,43 @@
-import { OmitType, PartialType, PickType } from '@nestjs/swagger';
-import { IsNumber, IsString, Length, Matches } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+} from 'class-validator';
 import { CommonOutput } from 'src/common/dtos/common.dto';
-import { User } from '../entities/user.entity';
 
-export class UpdateUserDTO extends PartialType(
-  PickType(User, ['checkPassword', 'phoneNumber', 'pwd', 'email']),
-) {
+export class UpdateUserDTO {
   @IsString({ message: '올바른 닉네임 형식이 아닙니다.' })
   @Matches(/^[[ㄱ-ㅎㅏ-ㅣ가-힣a-z0-9!-=\S]*$/i, {
     message: '닉네임은 형식에 맞는 값을 사용하세요.',
   })
   @Length(2, 15, { message: '닉네임을 2글자 이상 15글자 이하로 입력하세요' })
+  @IsOptional()
   nickName?: string;
-}
 
-export class UpdateUserProtoType extends UpdateUserDTO {
-  @IsNumber()
-  id: number;
+  @IsOptional()
+  @IsEmail({}, { message: '이메일 형식을 입력하세요.' })
+  email?: string;
+
+  @Length(8, 40, { message: '비밀번호는 8~40로 입력하세요' })
+  @Matches(/^[\S]*$/i, { message: '비밀번호에 공란은 허용되지 않습니다.' })
+  @IsString({ message: '올바른 비밀번호 형식이 아닙니다.' })
+  @IsOptional()
+  pwd?: string;
+
+  @Length(8, 40, { message: '비밀번호는 8~40로 입력하세요' })
+  @IsString({ message: '올바른 비밀번호 형식이 아닙니다.' })
+  @IsOptional()
+  @Matches(/^[\S]*$/i, { message: '비밀번호에 공란은 허용되지 않습니다.' })
+  pwdConfirm?: string;
+
+  @IsString({ message: '올바른 휴대폰번호 형식이 아닙니다.' })
+  @IsOptional()
+  @Matches(/^[0-9]{11}$/i, {
+    message: '휴대폰번호를 형식에 맞게 입력하세요.',
+  })
+  phoneNumber?: string;
 }
 
 export class UpdateUserOutput extends CommonOutput {}

@@ -19,8 +19,9 @@ import { ConfirmExistDTO, ConfirmExistOutput } from './dtos/confirmExist.dto';
 import { JoinDTO, JoinOutput } from './dtos/join.dto';
 import { LoginDTO, LoginOutput } from './dtos/login.dto';
 import { MeOutput } from './dtos/me.dto';
-import { RefreshTokenDTO } from './dtos/refreshToken.dto';
+import { RefreshTokenOutput } from './dtos/refreshToken.dto';
 import { SocialDTO, SocialOutput } from './dtos/socialLogin.dto';
+import { UpdateConfirmDTO } from './dtos/updateConfirm.dto';
 import { UpdateUserDTO } from './dtos/updateUser.dto';
 import { User } from './entities/user.entity';
 import { UserService } from './user.service';
@@ -60,6 +61,12 @@ export class UserController {
     return this.userService.confirmExist(user, data);
   }
 
+  @UseGuards(Guard)
+  @Post('updateconfirm')
+  async cupdateConfirm(@Body() data: UpdateConfirmDTO, @getUser() user: User) {
+    return this.userService.confirmExist(user, data);
+  }
+
   @Post('login')
   login(@Body() data: LoginDTO): Promise<LoginOutput> {
     return this.userService.login(data);
@@ -81,9 +88,9 @@ export class UserController {
   }
 
   @UseGuards(Guard)
-  @Post('refreshtoken')
-  refreshToken(@getUser() user: User, @Body() refreshToken: RefreshTokenDTO) {
-    return this.userService.refrechToken(user, refreshToken);
+  @Get('refreshtoken')
+  refreshToken(@getUser() user: User): Promise<RefreshTokenOutput> {
+    return this.userService.refrechToken(user);
   }
 
   @UseGuards(Guard)

@@ -1,3 +1,5 @@
+import * as uuid from 'uuid';
+import * as jwt from 'jsonwebtoken';
 import {
   IsEmail,
   IsOptional,
@@ -6,9 +8,17 @@ import {
   Matches,
 } from 'class-validator';
 import { CoreEntity } from 'src/common/entities/coreEntity';
-import { BeforeInsert, BeforeUpdate, Column, Entity } from 'typeorm';
+import {
+  BeforeInsert,
+  BeforeUpdate,
+  Code,
+  Column,
+  Entity,
+  OneToMany,
+} from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Injectable } from '@nestjs/common';
+import { PhoneAuthEntity } from 'src/auth/entities/phoneAuth.entity';
 
 @Entity()
 @Injectable()
@@ -33,13 +43,10 @@ export class User extends CoreEntity {
   @IsOptional()
   pwd?: string;
 
-  @Column({ nullable: true, unique: true })
+  @Column({ nullable: true, unique: true, select: false })
   @IsString()
   @IsOptional()
   refreshToken?: string;
-
-  @Column({ default: false })
-  varified: boolean;
 
   @Length(8, 40, { message: '비밀번호는 8~40로 입력하세요' })
   @IsString({ message: '올바른 비밀번호 형식이 아닙니다.' })
@@ -58,6 +65,15 @@ export class User extends CoreEntity {
   @Column({ nullable: true })
   @IsOptional()
   socialId?: number;
+
+  @Column({ default: false })
+  verified: boolean;
+
+  @OneToMany(
+    (type) => PhoneAuthEntity,
+    (PhoneAuthEntity) => PhoneAuthEntity.code,
+  )
+  codes: PhoneAuthEntity[];
 
   @BeforeInsert()
   @BeforeUpdate()
