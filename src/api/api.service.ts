@@ -28,7 +28,7 @@ export class ApiService {
     //추천코스 관광정보는
     //채우면서 디테일 3개를 받아오면서 관계를 맺으면서 채워야 한다.
     // this.getCourseData();
-    this.getLocationUpdate();
+    // this.getLocationUpdate();
     // this.sampleLocation();
     // this.sampleDetail();
     // 2384832 25
@@ -218,7 +218,9 @@ export class ApiService {
   }
 
   encodeKey =
-    'DbTqTFQ01Byhsb85l08hrTaU8NhtcBaNcLw4Np%2BTT6tUsxKDoIgNxTFqMEH5NBK9NuGYxAgwL6WQf6ODDGBUeg%3D%3D';
+    '3zPyk8%2FXWmTWhpEKQexMhOskMVyWPnJ%2F4RcROrxpwmeX7O%2BELFIo4tzXwlCh5Wyqi7lbjc3gAvcTOEgzEA08Xw%3D%3D';
+  // encodeKey =
+  //   'DbTqTFQ01Byhsb85l08hrTaU8NhtcBaNcLw4Np%2BTT6tUsxKDoIgNxTFqMEH5NBK9NuGYxAgwL6WQf6ODDGBUeg%3D%3D';
   // encodeKey =
   //   'R1YkIepzkxhj6Ouue%2Fo0BcyXRM89NzjOU2baG8hXDjqv7MyVSxspxUBLzUZOJPISnGgxDg8SaIutpCmhB7OE%2Fg%3D%3D';
 
@@ -343,7 +345,7 @@ export class ApiService {
         params: {
           contentTypeId: 12,
           numOfRows: 20,
-          pageNo: 1,
+          pageNo: 2,
           areaCode: i.code,
         },
       });

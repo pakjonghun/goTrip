@@ -15,7 +15,6 @@ import { PhoneAuthDTO, PhoneAuthOutput } from './dtos/phoneAuth.dto';
 import { PhoneAuthEntity } from './entities/phoneAuth.entity';
 import { PhoneConfirmDTO } from './dtos/phoneConfirm.dto';
 import { Interval } from '@nestjs/schedule';
-import { ApiExcludeEndpoint } from '@nestjs/swagger';
 
 @Injectable()
 export class AuthService {
@@ -205,12 +204,19 @@ export class AuthService {
   }
 
   async getSocialUserInfo(token) {
-    const data = await axios.get('http://kapi.kakao.com//v2/user/me', {
+    const data = await axios.get('https://kapi.kakao.com/v2/user/me', {
       headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-type': 'application/x-www-form-urlencoded;charset=utf-8',
+        'content-type': 'application/x-www-form-urlencoded',
+        authorization: `Bearer ${token}`,
       },
     });
-    console.log(data);
+
+    const {
+      data: {
+        id,
+        properties: { nickname },
+        kakao_account: { email },
+      },
+    } = data;
   }
 }
