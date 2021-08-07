@@ -5,7 +5,7 @@ import { Course } from './course.entity';
 
 @Entity()
 export class CourseRoute extends CoreEntity {
-  @Column({ nullable: true, unique: true })
+  @Column({ nullable: true })
   @IsOptional()
   contentid?: string;
 
@@ -13,6 +13,8 @@ export class CourseRoute extends CoreEntity {
   @IsOptional()
   subcontentid?: string;
 
-  @ManyToOne((type) => Course, (Course) => CourseRoute, { onDelete: 'CASCADE' })
+  @ManyToOne((type) => Course, (Course) => Course.courseRoute, {
+    onDelete: 'CASCADE',
+  })
   course: Course;
 }

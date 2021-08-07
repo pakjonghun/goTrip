@@ -28,7 +28,7 @@ export class ApiService {
     //추천코스 관광정보는
     //채우면서 디테일 3개를 받아오면서 관계를 맺으면서 채워야 한다.
     // this.getCourseData();
-    // this.getLocationUpdate();
+    this.getLocationUpdate();
     // this.sampleLocation();
     // this.sampleDetail();
     // 2384832 25
@@ -37,19 +37,21 @@ export class ApiService {
   //추천코스 관광지 정보와 디테일 정보를 모두 채워 넣는 매서드(지우는거 없다 모두 업데이트 함. 없으면 만들고 있으면 업뎃)
   async getCourseData() {
     //지역코드 갖고와서(일단 시군구 제외 도단위 코드)
-    const codes = await this.area.find({});
+    const codes = await this.area.find({
+      where: [{ code: 38 }, { code: 39 }],
+    });
 
     //반복문으로 지역기반 관광지 정보를 받아와서
     for (let i of codes) {
       const data = await this.api.get('areaBasedList', {
         params: {
           contentTypeId: 25,
-          numOfRows: 20,
-          pageNo: 2,
+          numOfRows: 10,
+          pageNo: 1,
           areaCode: i.code,
         },
       });
-      console.log(i.id);
+      console.log(i.code);
       const {
         data: {
           response: {
@@ -138,29 +140,25 @@ export class ApiService {
 
         //코스루트는 배열로 뜬다. 다시 반복문을 실행해서 각각 코스 루트에 저장한다.
         for (let k of courseRouteDetail) {
-          // 서브컨텐트 아이디가 중복으로 계속 나온다. 유니크 이므로 검사 해줘야 한다. ㅠ ㅠ
-          // 컨텐트 아이디는 다른데 서브컨텐트 아이디가 같은 놈도 있다 진짜.. 이거는 그냥 유니크 풀어야 한다.
           const outExist = await this.courseRouter.findOne({
             contentid: k.contentid,
             subcontentid: k.subcontentid,
           });
-          if (outExist) continue;
-
-          let exist = await this.courseRouter.findOne(
-            { contentid: k.contentid },
-            { select: ['id'] },
-          );
-
-          if (!exist) {
-            exist = k;
-          } else {
-            for (let i in k) {
-              exist[i] = k[i];
-            }
+          if (outExist) {
+            continue;
           }
+
+          const exist = this.courseRouter.create({
+            contentid: k.contentid,
+            subcontentid: k.subcontentid,
+            course: courseSave,
+          });
+
+          // 서브컨텐트 아이디가 중복으로 계속 나온다. 유니크 이므로 검사 해줘야 한다. ㅠ ㅠ
+          // 컨텐트 아이디는 다른데 서브컨텐트 아이디가 같은 놈도 있다 진짜.. 이거는 그냥 유니크 풀어야 한다.
+
           // 1921815
           //코스와 관계를 맺는다.
-          exist.course = courseSave;
           await this.courseRouter.save(exist);
         }
 
@@ -187,6 +185,7 @@ export class ApiService {
         await this.image.save(imgExist);
       }
     }
+    console.log('finish');
   }
 
   async getDetail(url: string, contentId: number, contentTypeId?: number) {
@@ -345,15 +344,17 @@ export class ApiService {
 
   async getLocationUpdate() {
     //지역코드 갖고와서(일단 시군구 제외 도단위 코드)
-    const codes = await this.area.find({});
+    const codes = await this.area.find({
+      where: [{ code: 4 }, { code: 5 }, { code: 6 }],
+    });
 
     //반복문으로 지역기반 관광지 정보를 받아와서
     for (let i of codes) {
       const data = await this.api.get('areaBasedList', {
         params: {
-          contentTypeId: 12,
-          numOfRows: 20,
-          pageNo: 2,
+          contentTypeId: 39,
+          numOfRows: 50,
+          pageNo: 1,
           areaCode: i.code,
         },
       });
@@ -457,6 +458,7 @@ export class ApiService {
           await this.image.save(q);
         }
       }
+      console.log('finish');
     }
   }
 }
