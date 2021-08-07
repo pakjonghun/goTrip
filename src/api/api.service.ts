@@ -28,7 +28,7 @@ export class ApiService {
     //추천코스 관광정보는
     //채우면서 디테일 3개를 받아오면서 관계를 맺으면서 채워야 한다.
     // this.getCourseData();
-    this.getLocationUpdate();
+    // this.getLocationUpdate();
     // this.sampleLocation();
     // this.sampleDetail();
     // 2384832 25
