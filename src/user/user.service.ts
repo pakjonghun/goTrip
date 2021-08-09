@@ -236,6 +236,7 @@ export class UserService {
             findBySocialId['id'],
             60 * 60,
           );
+          const { iat } = this.authService.verify(String(accessToken));
           const refreshToken = this.authService.sign(
             'id',
             findBySocialId['id'],
@@ -249,6 +250,7 @@ export class UserService {
             before,
             refreshToken: String(refreshToken),
             accessToken: String(accessToken),
+            iat,
           });
           return;
         }
@@ -269,6 +271,7 @@ export class UserService {
       console.log(userObj);
       const newUser = await this.user.save(userObj);
       const accessToken = this.authService.sign('id', newUser['id'], 60 * 60);
+      const { iat } = this.authService.verify(String(accessToken));
       const refreshToken = this.authService.sign(
         'id',
         newUser['id'],
@@ -279,6 +282,7 @@ export class UserService {
       res.json({
         ok: true,
         refreshToken: String(refreshToken),
+        iat,
         accessToken: String(accessToken),
       });
       return;
@@ -315,19 +319,19 @@ export class UserService {
         }
 
         if (passwordCorrect) {
-          const activeToken = this.authService.sign('id', exist.id, 1);
+          const activeToken = this.authService.sign('id', exist.id, 60 * 60);
+          const { iat } = this.authService.verify(String(activeToken));
           const refreshToken = this.authService.sign(
             'id',
             exist.id,
             60 * 60 * 24 * 7,
           );
-
           exist['refreshToken'] = String(refreshToken);
           delete exist.pwd;
           await this.user.save(exist);
-
           return {
             ok: true,
+            iat,
             accessToken: String(activeToken),
             refreshToken: String(refreshToken),
           };
@@ -381,8 +385,10 @@ export class UserService {
   async refrechToken(user: User): Promise<RefreshTokenOutput> {
     try {
       const activeToken = this.authService.sign('id', user.id, 60 * 60);
+      const { iat } = this.authService.verify(String(activeToken));
       return {
         ok: true,
+        iat,
         activeToken: String(activeToken),
       };
     } catch (e) {

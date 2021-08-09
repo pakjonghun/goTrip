@@ -1,4 +1,5 @@
 import { IsEmail, IsString, Matches } from 'class-validator';
+import { CommonOutput } from 'src/common/dtos/common.dto';
 
 export class TempTokenDTO {
   @IsString({ message: '인증코드가 형식에 맞지 않습니다.' })
@@ -12,4 +13,9 @@ export class TempTokenDTO {
     message: '휴대폰번호를 형식에 맞게 입력하세요.',
   })
   phoneNumber: string;
+}
+
+export class TempTokenOutput extends CommonOutput {
+  activeToken?: string;
+  lat?: number;
 }

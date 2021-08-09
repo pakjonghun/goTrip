@@ -13,8 +13,6 @@ import { URLSearchParams } from 'url';
 import { AuthService } from './auth.service';
 import { PhoneAuthDTO, PhoneAuthOutput } from './dtos/phoneAuth.dto';
 import { PhoneConfirmDTO, PhoneConfirmOutput } from './dtos/phoneConfirm.dto';
-import { getUser } from './getUser.decorator';
-import { User } from 'src/user/entities/user.entity';
 import {
   FindPasswordDTO,
   FindPasswordOutput,

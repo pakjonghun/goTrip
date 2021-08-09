@@ -13,7 +13,7 @@ import { PhoneConfirmDTO } from './dtos/phoneConfirm.dto';
 import { Interval } from '@nestjs/schedule';
 import { User } from 'src/user/entities/user.entity';
 import { FindPasswordDTO, FindPasswordOutput } from './dtos/findPassword.dto';
-import { TempTokenDTO } from './dtos/tempToken.dto';
+import { TempTokenDTO, TempTokenOutput } from './dtos/tempToken.dto';
 
 @Injectable()
 export class AuthService {
@@ -110,7 +110,11 @@ export class AuthService {
     }
   }
 
-  async tempToken({ email, code, phoneNumber }: TempTokenDTO) {
+  async tempToken({
+    email,
+    code,
+    phoneNumber,
+  }: TempTokenDTO): Promise<TempTokenOutput> {
     try {
       const currentUser = await this.user.findOne({ email });
 
@@ -130,10 +134,12 @@ export class AuthService {
 
       await this.phoneAuth.delete({ id: exist.id });
       const activeToken = this.sign('id', currentUser.id, 60 * 10);
+      const { lat } = this.verify(String(activeToken));
 
       return {
+        lat,
         ok: true,
-        activeToken,
+        activeToken: String(activeToken),
       };
     } catch (e) {
       console.log(e);

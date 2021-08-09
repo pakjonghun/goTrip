@@ -24,6 +24,8 @@ export class ApiService {
     private readonly tripDetail: Repository<TripDetail>,
     @InjectRepository(Image) private readonly image: Repository<Image>,
   ) {
+    this.getOnlyDetail();
+
     //먼저 25번 코드로 코스 엔티티를 채우는데
     //추천코스 관광정보는
     //채우면서 디테일 3개를 받아오면서 관계를 맺으면서 채워야 한다.
@@ -354,7 +356,7 @@ export class ApiService {
         params: {
           contentTypeId: 39,
           numOfRows: 50,
-          pageNo: 1,
+          pageNo: 5,
           areaCode: i.code,
         },
       });
@@ -461,6 +463,30 @@ export class ApiService {
       console.log('finish');
     }
   }
-}
 
-//
+  async getOnlyDetail() {
+    const locations = await this.location.find({
+      where: { contenttypeid: 39, areacode: 7 },
+      select: ['contentid'],
+    });
+    for (let location of locations) {
+      const exist = await this.tripDetail.findOne({
+        contentid: String(location.contentid),
+      });
+      if (exist) continue;
+
+      const getAllDetail = await this.getDetail(
+        'detailCommon',
+        location.contentid,
+      );
+
+      if (!getAllDetail) continue;
+
+      const create = this.tripDetail.create(getAllDetail);
+
+      create['location'] = location;
+      await this.tripDetail.save(create);
+    }
+    console.log('finish');
+  }
+}

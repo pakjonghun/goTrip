@@ -11,6 +11,7 @@ export class SocialDTO {
 }
 
 export class SocialOutput extends CommonOutput {
+  iat?: number;
   accessToken?: string;
   refreshToken?: string;
 }

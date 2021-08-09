@@ -12,6 +12,7 @@ export class LoginDTO {
 }
 
 export class LoginOutput extends CommonOutput {
+  iat?: number;
   accessToken?: string;
   refreshToken?: string;
 }
