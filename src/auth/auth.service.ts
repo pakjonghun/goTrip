@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as jwt from 'jsonwebtoken';
 import { commonMessages } from 'src/common/erroeMessages';
 import { LessThan, Repository } from 'typeorm';
-import { UserService } from 'src/user/user.service';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import * as CryptoJS from 'crypto-js';
 import axios from 'axios';
@@ -18,8 +17,6 @@ import { TempTokenDTO, TempTokenOutput } from './dtos/tempToken.dto';
 @Injectable()
 export class AuthService {
   constructor(
-    @Inject(forwardRef(() => UserService))
-    private readonly userService: UserService,
     private readonly configService: ConfigService,
     @InjectRepository(PhoneAuthEntity)
     private readonly phoneAuth: Repository<PhoneAuthEntity>,

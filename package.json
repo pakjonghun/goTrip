@@ -75,7 +75,10 @@
     "tsconfig-paths": "^3.10.1",
     "typescript": "^4.3.5"
   },
-  "jest": {
+  "jest": {"moduleNameMapper":{
+    "^src/(.*)$":"<rootDir>/$1"
+  },
+
     "moduleFileExtensions": [
       "js",
       "json",
@@ -90,6 +93,16 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "coveragePathIgnorePatterns":[
+      "node_modules",
+      ".entity.ts",
+      ".controller.ts",
+      ".dto.ts",
+      ".module.ts",
+      ".constants.ts",
+      ".middleWare.ts"
+      
+    ]
   }
 }
