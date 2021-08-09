@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { GetCourseProcessOutput } from './dtos/get-course-process.dto';
+import { GetTripDetailOutput } from './dtos/get-trip-detail.dto';
 import { GetCourseInput, GetCourseOutput } from './dtos/get-course.dto';
 import { DUMMY_DATA } from './trip.constants';
 import { TripService } from './trip.service';
@@ -19,9 +19,8 @@ export class TripController {
   }
 
   @Get(':contentid')
-  getCourseProcess(
-    @Param('contentid') contentid: number,
-  ): Promise<GetCourseProcessOutput> {
-    return this.tripService.getCourseProcess(contentid);
+  getTripDetail(@Param('contentid') contentid: number) {
+    return this.tripService.getTripDetail(contentid);
   }
+  //: Promise<GetTripDetailOutput>
 }
