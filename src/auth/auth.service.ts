@@ -3,8 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as jwt from 'jsonwebtoken';
 import { commonMessages } from 'src/common/erroeMessages';
 import { LessThan, Repository } from 'typeorm';
-import { UserService } from 'src/user/user.service';
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as CryptoJS from 'crypto-js';
 import axios from 'axios';
 import { PhoneAuthDTO, PhoneAuthOutput } from './dtos/phoneAuth.dto';
@@ -14,12 +13,18 @@ import { Interval } from '@nestjs/schedule';
 import { User } from 'src/user/entities/user.entity';
 import { FindPasswordDTO, FindPasswordOutput } from './dtos/findPassword.dto';
 import { TempTokenDTO, TempTokenOutput } from './dtos/tempToken.dto';
+import * as redis from 'redis';
+import { PhoneNumber } from 'libphonenumber-js';
+import { tsConstructSignatureDeclaration } from '@babel/types';
+
+const client = redis.createClient();
+client.on('connect', () => {
+  console.log('redis is running');
+});
 
 @Injectable()
 export class AuthService {
   constructor(
-    @Inject(forwardRef(() => UserService))
-    private readonly userService: UserService,
     private readonly configService: ConfigService,
     @InjectRepository(PhoneAuthEntity)
     private readonly phoneAuth: Repository<PhoneAuthEntity>,
@@ -88,7 +93,19 @@ export class AuthService {
       }
 
       const phoneAuthCodeObj = await this.phoneAuth.save(exist);
-      await this.sendPhoneAuthNumber(phoneNumber, phoneAuthCodeObj.code);
+
+      client.lpush(
+        'phoneNumber',
+        `${exist.phoneNumber} ${phoneAuthCodeObj.code}`,
+        (err, reply) => {
+          if (err) {
+            console.log(err);
+            return commonMessages.commonAuthFail;
+          }
+        },
+      );
+
+      // await this.sendPhoneAuthNumber(phoneNumber, phoneAuthCodeObj.code);
       return commonMessages.commonSuccess;
     } catch (e) {
       console.log(e);
@@ -212,20 +229,73 @@ export class AuthService {
     });
   }
 
-  async getSocialUserInfo(token) {
-    const data = await axios.get('https://kapi.kakao.com/v2/user/me', {
-      headers: {
-        'content-type': 'application/x-www-form-urlencoded',
-        authorization: `Bearer ${token}`,
-      },
+  @Interval(1000 * 5)
+  async sendPhoneAuth() {
+    client.lpop('phoneNumber', async function (err, reply) {
+      if (reply === null) return;
+      if (err) return console.log(err);
+      const [number, code] = reply.split(' ');
+      sendPhoneAuthNumber(number, Number(code));
     });
 
-    const {
-      data: {
-        id,
-        properties: { nickname },
-        kakao_account: { email },
-      },
-    } = data;
+    async function sendPhoneAuthNumber(
+      phoneNumber: string,
+      verifyCode: number,
+    ) {
+      const date = Date.now().toString();
+      const uri = process.env.NCP_serviceID;
+      const secretKey = process.env.NCP_secretKey;
+      const accessKey = process.env.NCP_accessKey;
+      const method = 'POST';
+      const space = ' ';
+      const newLine = '\n';
+      const url = `https://sens.apigw.ntruss.com/sms/v2/services/${uri}/messages`;
+      const url2 = `/sms/v2/services/${uri}/messages`;
+      const hmac = CryptoJS.algo.HMAC.create(CryptoJS.algo.SHA256, secretKey);
+      hmac.update(method);
+      hmac.update(space);
+      hmac.update(url2);
+      hmac.update(newLine);
+      hmac.update(date);
+      hmac.update(newLine);
+      hmac.update(accessKey);
+
+      const hash = hmac.finalize();
+      const signature = hash.toString(CryptoJS.enc.Base64);
+      try {
+        const response = await axios({
+          method,
+          url,
+
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'x-ncp-iam-access-key': accessKey,
+            'x-ncp-apigw-timestamp': date,
+            'x-ncp-apigw-signature-v2': signature,
+          },
+          data: {
+            type: 'SMS',
+            contentType: 'COMM',
+            countryCode: '82',
+            from: process.env.hostPhoneNumber,
+            content: `[본인 확인] 인증번호 [${verifyCode}]를 입력해주세요.`,
+            messages: [
+              {
+                to: `${phoneNumber}`,
+              },
+            ],
+          },
+        });
+
+        if (response.data['statusCode'] < 400) {
+          return commonMessages.commonSuccess;
+        } else {
+          return commonMessages.commonAuthFail;
+        }
+      } catch (e) {
+        console.log(e);
+        return commonMessages.commonAuthFail;
+      }
+    }
   }
 }

@@ -268,7 +268,7 @@ export class UserService {
         userObj = this.user.create(userInfo);
       } else {
       }
-      console.log(userObj);
+
       const newUser = await this.user.save(userObj);
       const accessToken = this.authService.sign('id', newUser['id'], 60 * 60);
       const { iat } = this.authService.verify(String(accessToken));
