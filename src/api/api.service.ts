@@ -24,21 +24,72 @@ export class ApiService {
     private readonly tripDetail: Repository<TripDetail>,
     @InjectRepository(Image) private readonly image: Repository<Image>,
   ) {
-    this.getData();
+    // this.getCommonDetail();
+    this.getCommonDetail();
   }
 
-  async getData() {
-    const data = await axios.get(
-      'http://api.visitkorea.or.kr/openapi/service/rest/KorService/areaCode',
-      {
+  async getCommonDetail() {
+    const tempDB = await this.location.find({
+      select: ['contentid', 'contenttypeid'],
+      where: [{ areacode: 2 }],
+      order: { createdAt: 'ASC' },
+    });
+    for (let i of tempDB) {
+      const exist = await this.tripDetail.findOne({
+        contentid: String(i.contentid),
+      });
+      if (!exist) continue;
+      const data = await this.getData(
+        'detailIntro',
+        i.contentid,
+        i.contenttypeid,
+      );
+
+      for (let i in data) {
+        exist[i] = data[i];
+      }
+
+      await this.tripDetail.save(exist);
+    }
+    console.log('finish');
+  }
+
+  async getData(url: string, contentid?: any, contenttypeid?: any) {
+    try {
+      const api = axios.create({
+        baseURL: 'http://api.visitkorea.or.kr/openapi/service/rest/KorService/',
         params: {
           MobileOS: 'ETC',
           MobileApp: 'init',
-          ServiceKey:
+          ServiceKey: decodeURIComponent(
             'R1YkIepzkxhj6Ouue%2Fo0BcyXRM89NzjOU2baG8hXDjqv7MyVSxspxUBLzUZOJPISnGgxDg8SaIutpCmhB7OE%2Fg%3D%3D',
+          ),
         },
-      },
-    );
-    console.dir(data, { depth: 30 });
+      });
+
+      const data = await api.get(url, {
+        params: {
+          contentTypeId: contenttypeid,
+          contentId: contentid,
+          introYN: 'Y',
+          overviewYN: 'Y',
+          mapinfoYN: 'Y',
+          addrinfoYN: 'Y',
+          catcodeYN: 'Y',
+          areacodeYN: 'Y',
+          firstImageYN: 'Y',
+          defaultYN: 'Y',
+        },
+      });
+
+      const {
+        data: {
+          response: { body },
+        },
+      } = data;
+      return body.items.item;
+    } catch (e) {
+      console.log(e);
+    }
   }
 }
