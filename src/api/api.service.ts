@@ -25,7 +25,7 @@ export class ApiService {
     @InjectRepository(Image) private readonly image: Repository<Image>,
   ) {
     // this.getCommonDetail();
-    this.getCommonDetail();
+    // this.getCommonDetail();
   }
 
   async getCommonDetail() {
