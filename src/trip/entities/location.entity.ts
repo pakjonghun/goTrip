@@ -9,7 +9,7 @@ export class Location extends CoreEntity {
   @OneToMany((type) => Image, (Image) => Image.location)
   image: Image[];
 
-  @Column({ type: 'bigint', nullable: true, unique: true })
+  @Column({ type: 'bigint', nullable: true })
   @IsOptional()
   contentid?: number;
 

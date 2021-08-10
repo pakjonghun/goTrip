@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import axios from 'axios';
+import { AreaCode } from 'src/trip/entities/areacode.entity';
 import { Course } from 'src/trip/entities/course.entity';
 import { CourseRoute } from 'src/trip/entities/courseRoute.entity';
 import { Location } from 'src/trip/entities/location.entity';
@@ -13,6 +15,8 @@ export class GeoService {
     private readonly locations: Repository<Location>,
     @InjectRepository(CourseRoute)
     private readonly courseRoutes: Repository<CourseRoute>,
+    @InjectRepository(AreaCode)
+    private readonly areaCodes: Repository<AreaCode>,
   ) {}
 
   // 지역코드, 카테고리 기반으로 DB에서 코스들을 가져온다
@@ -36,20 +40,24 @@ export class GeoService {
       if (!i.mapx || !i.mapy) {
         continue;
       }
+
       if (i.taketime && i.taketime.includes('박')) {
         // n박m일이면 다 쳐낸다
         continue;
       }
+
       const distance = this.getDistanceFromLatLonInKm(
         lat1,
         lng1,
         Number(i.mapy),
         Number(i.mapx),
       );
+
       if (distance <= km) {
         result.push({ ...i, distance: Math.round(distance) });
       }
     }
+
     if (result.length === 0) {
       return { ok: false, error: '조건에 맞는 데이터가 없습니다.' };
     }
@@ -69,18 +77,67 @@ export class GeoService {
 
     poppedCourse['course'] = [];
 
+    // 뽑은 코스에 해당하는 관광지들 아이디 추출
     const courseRouteArr = await this.courseRoutes.find({
       contentid: poppedCourse.contentid,
     });
 
+    const locationOptionsInPoppedCourse = [];
+
+    // 관광지들 아이디로 관광지 엔티티에서 정보가져와서 결과 오브젝트에 추가
     for (const i of courseRouteArr) {
-      const locationInRoute = await this.locations.find({
-        contentid: +i.subcontentid,
+      const contentid = +i.subcontentid;
+
+      const locationInRoute = await this.locations.findOne({
+        contentid: contentid,
       });
+
+      if (!locationInRoute) {
+        continue;
+      }
+
+      locationOptionsInPoppedCourse.push(locationInRoute.cat3);
+
       poppedCourse.course.push(locationInRoute);
     }
 
-    return { ok: true, data: poppedCourse };
+    const areaCodeOfPoppedCourse = poppedCourse.areacode;
+
+    const whatElse = {};
+
+    for (const locationOption of locationOptionsInPoppedCourse) {
+      const locationCat2 = locationOption.substring(0, 5);
+      if (locationCat2 in whatElse) {
+        continue;
+      }
+
+      const locationsInThisAreaByOption = await this.locations.find({
+        areacode: areaCodeOfPoppedCourse,
+        // sigungucode: sigunguCodeOfPoppedCourse,
+        cat3: locationOption,
+      });
+
+      // console.log(locationOption, locationsInThisAreaByOption.length);
+
+      const limitedLocationsInThisAreaByOption = [];
+
+      while (limitedLocationsInThisAreaByOption.length < 10) {
+        const poppedLocation = locationsInThisAreaByOption.splice(
+          Math.floor(Math.random() * locationsInThisAreaByOption.length),
+          1,
+        )[0];
+
+        limitedLocationsInThisAreaByOption.push(poppedLocation);
+
+        if (locationsInThisAreaByOption.length == 0) {
+          break;
+        }
+      }
+
+      whatElse[locationCat2] = limitedLocationsInThisAreaByOption;
+    }
+
+    return { ok: true, data: [poppedCourse, whatElse] };
   }
 
   getDistanceFromLatLonInKm(lat1, lng1, lat2, lng2) {
