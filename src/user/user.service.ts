@@ -181,6 +181,8 @@ export class UserService {
         return;
       }
 
+      delete userInfo.ok;
+
       //이미 가입되어 있는 회원이 있는지 소셜아이디로 검색한다.
       const findBySocialId = await this.user.findOne({
         socialId: userInfo.socialId,
