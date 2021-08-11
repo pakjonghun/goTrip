@@ -3,6 +3,7 @@ import {
   IsDateString,
   IsIn,
   IsNumber,
+  IsOptional,
   IsString,
 } from 'class-validator';
 import { CommonOutput } from 'src/common/dtos/common.dto';
@@ -13,15 +14,30 @@ export class GetCourseInput {
   @IsDateString()
   startDate: Date;
 
-  @IsArray()
-  @IsIn(CATEGORIES, { each: true })
-  category: string[];
+  @IsNumber()
+  wishWeek: number;
 
   @IsArray()
-  @IsIn(AREA_CODES, {
-    each: true,
-  })
-  areaCode: number[];
+  // @IsIn(CATEGORIES, { each: true })
+  courseOptions: string[];
+
+  @IsArray()
+  // @IsIn(CATEGORIES, { each: true })
+  locationOptions: string[];
+
+  @IsNumber()
+  @IsIn(AREA_CODES)
+  startAreaCode: number;
+
+  @IsOptional()
+  @IsNumber()
+  @IsIn(AREA_CODES)
+  wideAreaCode: number;
+
+  @IsOptional()
+  @IsNumber()
+  // @IsIn(AREA_CODES, { each: true })
+  smallAreaCode: number;
 
   @IsString()
   lat: string;
@@ -30,7 +46,8 @@ export class GetCourseInput {
   lng: string;
 
   @IsNumber()
-  contenttypeid: number;
+  @IsIn([0, 1])
+  style: number;
 }
 
 export class GetCourseOutput extends CommonOutput {

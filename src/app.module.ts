@@ -65,7 +65,7 @@ import { Image } from './trip/entities/image.entity';
         Image,
       ],
       synchronize: true,
-      logging: true,
+      logging: false,
     }),
     ScheduleModule.forRoot(),
     UserModule,
