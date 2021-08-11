@@ -64,7 +64,7 @@ export class User extends CoreEntity {
 
   @Column({ nullable: true })
   @IsOptional()
-  socialId?: number;
+  socialId?: string;
 
   @Column({ default: false })
   verified: boolean;

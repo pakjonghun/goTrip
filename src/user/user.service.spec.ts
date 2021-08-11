@@ -11,6 +11,7 @@ const mockRepo = () => ({
   findOne: jest.fn(),
   save: jest.fn(),
   create: jest.fn(),
+  checkPassword: jest.fn(),
 });
 
 const mockAuthService = () => ({
@@ -29,8 +30,9 @@ describe('userservice', () => {
   let userService: UserService;
   let userRepo: MockRepo<User>;
   let phoneAuthRepo: MockRepo<PhoneAuthEntity>;
+  let authService: AuthService;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     const modules = await Test.createTestingModule({
       providers: [
         UserService,
@@ -40,7 +42,7 @@ describe('userservice', () => {
         },
         {
           provide: AuthService,
-          useValue: mockAuthService,
+          useValue: mockAuthService(),
         },
         {
           provide: getRepositoryToken(PhoneAuthEntity),
@@ -51,6 +53,7 @@ describe('userservice', () => {
     userService = modules.get<UserService>(UserService);
     userRepo = modules.get(getRepositoryToken(User));
     phoneAuthRepo = modules.get(getRepositoryToken(PhoneAuthEntity));
+    authService = modules.get<AuthService>(AuthService);
   });
 
   it('should be defined', () => {
@@ -151,9 +154,36 @@ describe('userservice', () => {
     );
     expect(result2).toStrictEqual(['phoneNumber', { id: 1 }]);
   });
+  describe('login', () => {
+    const loginAccount = { email: '1', pwd: '1', checkPassword: jest.fn() };
+
+    it('should return exist error', async () => {
+      userRepo.findOne.mockResolvedValue(undefined);
+      const loginResult = await userService.login(loginAccount);
+      expect(userRepo.findOne).toBeCalledTimes(1);
+      expect(userRepo.findOne).toBeCalledWith(
+        expect.any(Object),
+        expect.any(Object),
+      );
+      expect(loginResult).toStrictEqual(commonMessages.commonLoginFail);
+    });
+
+    it('should return password error', async () => {
+      userRepo.findOne.mockResolvedValue(loginAccount);
+      loginAccount.checkPassword.mockResolvedValue(false);
+      const loginResult = await userService.login({ email: '1', pwd: '2' });
+
+      expect(loginResult).toStrictEqual(commonMessages.commonLoginFail);
+    });
+
+    it('should return success', async () => {
+      userRepo.findOne.mockResolvedValue(loginAccount);
+      loginAccount.checkPassword.mockResolvedValue(true);
+      authService.verify
+    });
+  });
 
   it.todo('socialLoginService');
-  it.todo('login');
   it.todo('changePassword');
   it.todo('updateUser');
   it.todo('refrechToken');

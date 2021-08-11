@@ -59,7 +59,7 @@ export class UserService {
     return result;
   }
 
-  async getNaverUserInfo(res, token): Promise<object> {
+  async getNaverUserInfo(res, token) {
     let data;
     try {
       data = await axios.get('https://openapi.naver.com/v1/nid/me', {
@@ -72,18 +72,12 @@ export class UserService {
       return res.json(commonMessages.commonFail('네이버 소셜 인증이 '));
     }
 
-    const {
-      ok,
-      userInfo: { id, nickname, email, mobile },
-    } = data.data.response;
-
-    if (!ok) return ok;
-
+    const { id, nickname, email, mobile } = data.data.response;
     const result = {
       ...(id && { socialId: id }),
       ...(email && { email }),
       ...(nickname && { nickName: nickname }),
-      ...(mobile && { phoneNumber: mobile }),
+      ...(mobile && { phoneNumber: mobile.replace(/-/g, '') }),
     };
 
     return result;
@@ -183,10 +177,12 @@ export class UserService {
       }
 
       //이미 가입되어 있는 회원이 있는지 소셜아이디로 검색한다.
+      console.log(typeof userInfo.socialId);
       const findBySocialId = await this.user.findOne({
         socialId: userInfo.socialId,
       });
-
+      console.log(1);
+      console.log(findBySocialId);
       //있다면 기존정보와 달라진 정보가 있는지 확인한다.
       if (findBySocialId) {
         for (let item in userInfo) {
@@ -293,21 +289,9 @@ export class UserService {
     }
   }
 
-  async mergeUpdate(oldData, newData) {
-    for (let i in newData) {
-      if (oldData[i] === newData[i]) {
-        delete oldData.i;
-      } else {
-        oldData[i] = newData[i];
-      }
-    }
-    return oldData;
-  }
-
   async login({ email, pwd }: LoginDTO): Promise<LoginOutput> {
     try {
       const [key, exist] = await this.onlyExistCheck({ email });
-
       if (!exist) {
         return commonMessages.commonLoginFail;
       }
