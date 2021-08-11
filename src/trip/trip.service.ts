@@ -42,13 +42,22 @@ export class TripService {
     let coursesFromDB = null;
 
     if (wideAreaCode) {
-      // 목적지를 선택했을 시 : 지역코드와 코스옵션에 의거하여 DB에서 검색
-      ////////////////////////////////////// 아직 시군구코드 적용안시킴!!!/////////////////////////////////////////////
-      coursesFromDB = await this.courses
-        .createQueryBuilder()
-        .where('areacode = :wideAreaCode', { wideAreaCode })
-        .andWhere('cat2 IN (:...courseOptions)', { courseOptions })
-        .getMany();
+      if (smallAreaCode) {
+        /////// 광역시를 선택했을 시 시군구코드 포함해서 검색
+        coursesFromDB = await this.courses
+          .createQueryBuilder()
+          .where('areacode = :wideAreaCode', { wideAreaCode })
+          .andWhere('sigungucode = :smallAreaCode', { smallAreaCode })
+          .andWhere('cat2 IN (:...courseOptions)', { courseOptions })
+          .getMany();
+      } else {
+        /////// 도를 선택했을 시 시군구코드 포함 X
+        coursesFromDB = await this.courses
+          .createQueryBuilder()
+          .where('areacode = :wideAreaCode', { wideAreaCode })
+          .andWhere('cat2 IN (:...courseOptions)', { courseOptions })
+          .getMany();
+      }
     } else {
       // 목적지가 없을 시 : 고른 지역으로부터 200km이내에 있는 지역들의 코스를 검색
       coursesFromDB = await this.courses
