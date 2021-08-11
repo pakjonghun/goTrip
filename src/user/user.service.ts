@@ -40,7 +40,7 @@ export class UserService {
       });
     } catch (e) {
       console.log(e);
-      return res.json(commonMessages.commonFail('카카오 소셜 인증이 '));
+      return { ok: false };
     }
 
     const {
@@ -52,6 +52,7 @@ export class UserService {
     } = data;
 
     const result = {
+      ok: true,
       ...(id && { socialId: id }),
       ...(nickname && { nickName: nickname }),
       ...(email && { email }),
@@ -68,12 +69,11 @@ export class UserService {
         },
       });
     } catch (e) {
-      console.log(e);
-      return res.json(commonMessages.commonFail('네이버 소셜 인증이 '));
+      return { ok: false };
     }
-
     const { id, nickname, email, mobile } = data.data.response;
     const result = {
+      ok: true,
       ...(id && { socialId: id }),
       ...(email && { email }),
       ...(nickname && { nickName: nickname }),
@@ -176,13 +176,15 @@ export class UserService {
         userInfo = await this.getNaverUserInfo(res, socialToken);
       }
 
+      if (!userInfo.ok) {
+        res.json(commonMessages.commonAuthFail);
+        return;
+      }
+
       //이미 가입되어 있는 회원이 있는지 소셜아이디로 검색한다.
-      console.log(typeof userInfo.socialId);
       const findBySocialId = await this.user.findOne({
         socialId: userInfo.socialId,
       });
-      console.log(1);
-      console.log(findBySocialId);
       //있다면 기존정보와 달라진 정보가 있는지 확인한다.
       if (findBySocialId) {
         for (let item in userInfo) {
