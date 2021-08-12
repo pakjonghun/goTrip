@@ -16,5 +16,4 @@ export class TripController {
   getTripDetail(@Param('contentid') contentid: number) {
     return this.tripService.getTripDetail(contentid);
   }
-  //: Promise<GetTripDetailOutput>
 }

@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import axios from 'axios';
 import { GeoService } from 'src/geo/geo.service';
 import { Repository } from 'typeorm';
-import { GetTripDetailOutput } from './dtos/get-trip-detail.dto';
 import { GetCourseInput, GetCourseOutput } from './dtos/get-course.dto';
 import { Location } from './entities/location.entity';
 import { TripDetail } from './entities/tripDetail.entity';
@@ -42,8 +41,9 @@ export class TripService {
     let coursesFromDB = null;
 
     if (wideAreaCode) {
+      // 목적지가 있을 시..
       if (smallAreaCode) {
-        /////// 광역시를 선택했을 시 시군구코드 포함해서 검색
+        /////// 도를 선택했을 시 시군구코드 포함해서 검색
         coursesFromDB = await this.courses
           .createQueryBuilder()
           .where('areacode = :wideAreaCode', { wideAreaCode })
@@ -51,7 +51,7 @@ export class TripService {
           .andWhere('cat2 IN (:...courseOptions)', { courseOptions })
           .getMany();
       } else {
-        /////// 도를 선택했을 시 시군구코드 포함 X
+        /////// 광역시를 선택했을 시 시군구코드 포함 X
         coursesFromDB = await this.courses
           .createQueryBuilder()
           .where('areacode = :wideAreaCode', { wideAreaCode })
@@ -59,20 +59,20 @@ export class TripService {
           .getMany();
       }
     } else {
-      // 목적지가 없을 시 : 고른 지역으로부터 200km이내에 있는 지역들의 코스를 검색
+      // 목적지가 없을 시 : 출발 지역으로부터 200km이내에 있는 지역들의 코스를 검색
       coursesFromDB = await this.courses
         .createQueryBuilder()
         .where('areacode IN (:...wideAreaCode)', {
-          wideAreaCode: NEAR_AREA[startAreaCode],
+          wideAreaCode: NEAR_AREA[startAreaCode], // 출발 지역에서 200km 이내에 있는 지역들의 코드, trip.constants.ts 파일을 참조해주세요
         })
         .andWhere('cat2 IN (:...courseOptions)', { courseOptions })
         .getMany();
-      console.log('coursesFromDB.length:', coursesFromDB.length);
     }
 
-    // 1박2일인거 다 쳐내
-    let cnt = 0;
     for (const poppedCourse of coursesFromDB) {
+      // 이 반복문이 매우 오래 걸림. 성능 개선 필요.
+      // poppedCourse
+
       poppedCourse['course'] = [];
 
       // 뽑은 코스에 해당하는 관광지들 아이디 추출
@@ -80,6 +80,8 @@ export class TripService {
         contentid: poppedCourse.contentid,
       });
 
+      // 알찬 스케쥴을 선택하면 속하는 관광지가 5개를 넘어가는 코스만 추출
+      // 느긋한 스케쥴을 선택하면 속하는 관광지가 4개 이하인 코스만 추출
       if (style === 0) {
         if (courseRouteArr.length > 4) {
           poppedCourse['fitWithOption'] = false;
@@ -92,9 +94,7 @@ export class TripService {
         }
       }
 
-      // poppedCourse['locationCount'] = courseRouteArr.length;
-
-      // 관광지들 아이디로 관광지 엔티티에서 정보가져와서 결과 오브젝트에 추가
+      // 코스 객체에 관광지들 데이터 추가
       for (const i of courseRouteArr) {
         const contentid = +i.subcontentid;
 
@@ -106,12 +106,9 @@ export class TripService {
 
         poppedCourse.course.push(locationInRoute);
       }
-
-      cnt += 1;
     }
 
-    console.log('fittedCourse:', cnt); ///// 이 위까지가 매우 오래걸림
-
+    // 스타일과 옵션을 다 만족하는 코스만 남긴다
     coursesFromDB = coursesFromDB.filter((course) => {
       for (const location of course.course) {
         if (locationOptions.includes(location.cat2)) {
@@ -120,7 +117,7 @@ export class TripService {
       }
     });
 
-    // 옵션 맞는 코스들 중에 하나 랜덤으로 뽑는다
+    // 남은 코스들 중에 랜덤으로 하나를 뽑는다
     const poppedCourse = coursesFromDB.splice(
       Math.floor(Math.random() * coursesFromDB.length),
       1,
@@ -135,10 +132,30 @@ export class TripService {
       poppedCourse['overview'] = courseOverview.overview;
     }
 
+    // 날짜 정해주기
+    if (!startDate) {
+      // 만약 사용자가 날짜를 정하지 않았다면, wishWeek주 내의 랜덤한 날짜 배정
+      const randomNumberForStartDate = Math.floor(
+        Math.random() * wishWeek * 7 + 1,
+      );
+
+      const myDate = new Date();
+
+      myDate.setDate(myDate.getDate() + randomNumberForStartDate);
+
+      poppedCourse['startDate'] = myDate;
+    } else {
+      poppedCourse['startDate'] = new Date(startDate);
+    }
+
+    // 여기서부터는 What else를 넣어주기 위한 코드들입니다.
+    // What else의 선택기준은 최종적으로 뽑힌 코스에 속한 관광지들과 비슷한 성격의 관광지들입니다.
+    // 따라서 속한 관광지들과 같은 cat3(소분류)를 가진 같은 지역의 관광지들을 랜덤하게 10개씩 뽑아서 줍니다.
+    // 근데 보내줄 때의 키 값은 중분류로 보내줍니다.
     const locationOptionsInPoppedCourse = [];
 
     for (const locationElement of poppedCourse.course) {
-      locationOptionsInPoppedCourse.push(locationElement.cat2);
+      locationOptionsInPoppedCourse.push(locationElement.cat3);
     }
 
     const areaCodeOfPoppedCourse = poppedCourse.areacode;
@@ -178,8 +195,9 @@ export class TripService {
     return { ok: true, data: [poppedCourse, whatElse] };
   }
 
-  //: Promise<GetTripDetailOutput>
   async getTripDetail(contentid: number) {
+    // What else에서 일정추가 버튼 눌렀을 때, 디테일한 정보를 보여주기 위한 API입니다
+    // 기본 관광지 정보에 쉬는 날, 개장시간, 전화번호, 주소, 오버뷰 이렇게 추가로 들어갑니다.
     const tripDetail = await this.locations.findOne({ contentid });
     const detailInfo = await this.tripDetails.findOne({
       contentid: tripDetail.contentid + '',
@@ -205,7 +223,7 @@ export class TripService {
           if (response.data.response.header.resultCode == 22) {
             return;
           }
-          /////// 없으면 그냥 불러오고 바로 DB에 저장
+          /////// 없으면 그냥 API에서 불러오고 바로 DB에 저장
           const detailInfoFromAPI = response.data.response.body.items.item;
           let dataToSave = this.tripDetails.create({
             ...detailInfoFromAPI,
@@ -292,6 +310,5 @@ export class TripService {
     }
 
     return { ok: true, tripDetail };
-    // return { ok: true, tripDetail };
   }
 }
