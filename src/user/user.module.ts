@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from 'src/auth/auth.module';
 import { PhoneAuthEntity } from 'src/auth/entities/phoneAuth.entity';
+import { TripRecord } from './entities/tripRecord.entity';
 import { User } from './entities/user.entity';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
@@ -10,7 +11,7 @@ import { UserService } from './user.service';
   controllers: [UserController],
   providers: [UserService],
   imports: [
-    TypeOrmModule.forFeature([User, PhoneAuthEntity]),
+    TypeOrmModule.forFeature([User, PhoneAuthEntity, TripRecord]),
     forwardRef(() => AuthModule),
   ],
   exports: [UserService],

@@ -1,5 +1,3 @@
-import * as uuid from 'uuid';
-import * as jwt from 'jsonwebtoken';
 import {
   IsEmail,
   IsOptional,
@@ -8,17 +6,11 @@ import {
   Matches,
 } from 'class-validator';
 import { CoreEntity } from 'src/common/entities/coreEntity';
-import {
-  BeforeInsert,
-  BeforeUpdate,
-  Code,
-  Column,
-  Entity,
-  OneToMany,
-} from 'typeorm';
+import { BeforeInsert, BeforeUpdate, Column, Entity, OneToMany } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { Injectable } from '@nestjs/common';
 import { PhoneAuthEntity } from 'src/auth/entities/phoneAuth.entity';
+import { TripRecord } from './tripRecord.entity';
 
 @Entity()
 @Injectable()
@@ -68,6 +60,9 @@ export class User extends CoreEntity {
 
   @Column({ default: false })
   verified: boolean;
+
+  @OneToMany((type) => TripRecord, (TripRecord) => TripRecord.user)
+  tripRecord: TripRecord[];
 
   @OneToMany(
     (type) => PhoneAuthEntity,

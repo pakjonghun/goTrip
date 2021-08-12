@@ -8,10 +8,13 @@ import { CourseRoute } from './entities/courseRoute.entity';
 import { Course } from './entities/course.entity';
 import { TripDetail } from './entities/tripDetail.entity';
 import { Image } from './entities/image.entity';
+import { ApiModule } from 'src/api/api.module';
+import { DetailAreaCode } from './entities/detailAreaCode.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
+      DetailAreaCode,
       Location,
       CourseRoute,
       Course,
@@ -19,6 +22,7 @@ import { Image } from './entities/image.entity';
       Image,
     ]),
     GeoModule,
+    ApiModule,
   ],
   providers: [TripService],
   controllers: [TripController],

@@ -1,56 +1,29 @@
 import {
   IsArray,
-  IsDateString,
-  IsIn,
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
 } from 'class-validator';
-import { CommonOutput } from 'src/common/dtos/common.dto';
-import { Course } from '../entities/course.entity';
-import { AREA_CODES } from '../trip.constants';
 
 export class GetCourseInput {
+  @IsString()
   @IsOptional()
-  @IsDateString()
-  startDate: Date;
-
-  @IsNumber()
-  wishWeek: number;
+  @Matches(/[0-9]{4}[-]?[0-9]{2}[-]?[0-9]{2}/i, {
+    message: 'yyyy-mm-dd 형식으로 보내주세요.',
+  })
+  startDate?: string;
 
   @IsArray()
-  // @IsIn(CATEGORIES, { each: true })
-  courseOptions: string[];
-
-  @IsArray()
-  // @IsIn(CATEGORIES, { each: true })
-  locationOptions: string[];
-
-  @IsNumber()
-  @IsIn(AREA_CODES)
-  startAreaCode: number;
-
   @IsOptional()
-  @IsNumber()
-  @IsIn(AREA_CODES)
-  wideAreaCode: number;
+  contentType?: number[];
 
-  @IsOptional()
   @IsNumber()
-  // @IsIn(AREA_CODES, { each: true })
-  smallAreaCode: number;
+  areaCode?: number;
 
   @IsString()
   lat: string;
 
   @IsString()
   lng: string;
-
-  @IsNumber()
-  @IsIn([0, 1])
-  style: number;
-}
-
-export class GetCourseOutput extends CommonOutput {
-  data?: Course[];
 }

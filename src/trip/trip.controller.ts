@@ -1,6 +1,5 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { GetTripDetailOutput } from './dtos/get-trip-detail.dto';
-import { GetCourseInput, GetCourseOutput } from './dtos/get-course.dto';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { GetCourseInput } from './dtos/get-course.dto';
 import { TripService } from './trip.service';
 
 @Controller('trip')
@@ -8,12 +7,12 @@ export class TripController {
   constructor(private readonly tripService: TripService) {}
 
   @Post('search')
-  getCourse(@Body() getCourseInput: GetCourseInput): Promise<GetCourseOutput> {
+  getCourse(@Body() getCourseInput: GetCourseInput) {
     return this.tripService.getCourse(getCourseInput);
   }
 
-  @Get(':contentid')
-  getTripDetail(@Param('contentid') contentid: number) {
-    return this.tripService.getTripDetail(contentid);
+  @Get('cate')
+  getTripDetail(@Query() data) {
+    return this.tripService.getCate(data);
   }
 }

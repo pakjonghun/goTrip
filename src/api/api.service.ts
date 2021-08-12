@@ -25,68 +25,36 @@ export class ApiService {
     @InjectRepository(Image) private readonly image: Repository<Image>,
   ) {}
 
-  async getCommonDetail() {
-    const tempDB = await this.location.find({
-      select: ['contentid', 'contenttypeid'],
-      where: [{ areacode: 2 }],
-      order: { createdAt: 'ASC' },
-    });
-    for (let i of tempDB) {
-      const exist = await this.tripDetail.findOne({
-        contentid: String(i.contentid),
-      });
-      if (!exist) continue;
-      const data = await this.getData(
-        'detailIntro',
-        i.contentid,
-        i.contenttypeid,
-      );
-
-      for (let i in data) {
-        exist[i] = data[i];
-      }
-
-      await this.tripDetail.save(exist);
-    }
-    console.log('finish');
-  }
-
-  async getData(url: string, contentid?: any, contenttypeid?: any) {
+  async getDatas(url, params) {
     try {
-      const api = axios.create({
-        baseURL: 'http://api.visitkorea.or.kr/openapi/service/rest/KorService/',
-        params: {
-          MobileOS: 'ETC',
-          MobileApp: 'init',
-          ServiceKey: decodeURIComponent(
-            'R1YkIepzkxhj6Ouue%2Fo0BcyXRM89NzjOU2baG8hXDjqv7MyVSxspxUBLzUZOJPISnGgxDg8SaIutpCmhB7OE%2Fg%3D%3D',
-          ),
+      const data = await axios.get(
+        `http://api.visitkorea.or.kr/openapi/service/rest/KorService/${url}`,
+        {
+          params: {
+            ...params,
+            MobileOS: 'ETC',
+            MobileApp: 'init',
+            ServiceKey: decodeURIComponent(
+              'R1YkIepzkxhj6Ouue%2Fo0BcyXRM89NzjOU2baG8hXDjqv7MyVSxspxUBLzUZOJPISnGgxDg8SaIutpCmhB7OE%2Fg%3D%3D',
+            ),
+          },
         },
-      });
-
-      const data = await api.get(url, {
-        params: {
-          contentTypeId: contenttypeid,
-          contentId: contentid,
-          introYN: 'Y',
-          overviewYN: 'Y',
-          mapinfoYN: 'Y',
-          addrinfoYN: 'Y',
-          catcodeYN: 'Y',
-          areacodeYN: 'Y',
-          firstImageYN: 'Y',
-          defaultYN: 'Y',
-        },
-      });
+      );
 
       const {
         data: {
-          response: { body },
+          response: {
+            body: {
+              items: { item },
+            },
+          },
         },
       } = data;
-      return body.items.item;
+
+      return item;
     } catch (e) {
       console.log(e);
+      return false;
     }
   }
 }

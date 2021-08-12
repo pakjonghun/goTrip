@@ -21,6 +21,7 @@ import { LoginDTO, LoginOutput } from './dtos/login.dto';
 import { MeOutput } from './dtos/me.dto';
 import { RefreshTokenOutput } from './dtos/refreshToken.dto';
 import { SocialDTO, SocialOutput } from './dtos/socialLogin.dto';
+import { TripRecordDTO } from './dtos/tripRecorddto';
 import { UpdateConfirmDTO } from './dtos/updateConfirm.dto';
 import { UpdateUserDTO } from './dtos/updateUser.dto';
 import { User } from './entities/user.entity';
@@ -29,6 +30,12 @@ import { UserService } from './user.service';
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
+
+  @UseGuards(Guard)
+  @Post('record')
+  async saveTripRecore(@getUser() user: User, @Body() data: TripRecordDTO) {
+    return this.userService.saveTripRecore(user, data);
+  }
 
   @Post('join')
   async join(@Body() data: JoinDTO): Promise<JoinOutput> {

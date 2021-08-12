@@ -18,6 +18,8 @@ import {
   ChangePasswordDTO,
   ChangePasswordOutput,
 } from './dtos/changePassword.dto';
+import { TripRecord } from './entities/tripRecord.entity';
+import { TripRecordDTO } from './dtos/tripRecorddto';
 
 @Injectable()
 export class UserService {
@@ -27,7 +29,20 @@ export class UserService {
     @InjectRepository(User) private readonly user: Repository<User>,
     @InjectRepository(PhoneAuthEntity)
     private readonly phoneAuth: Repository<PhoneAuthEntity>,
+    @InjectRepository(TripRecord)
+    private readonly tripRecore: Repository<TripRecord>,
   ) {}
+
+  async saveTripRecore(user: User, data: TripRecordDTO) {
+    try {
+      const record = this.tripRecore.create(data);
+      record.user = user;
+      await this.tripRecore.save(record);
+      return commonMessages.commonSuccess;
+    } catch (e) {
+      console.log(e);
+    }
+  }
 
   async getKakaoUserInfo(res: Response, token: string): Promise<object> {
     let data;
@@ -422,7 +437,7 @@ export class UserService {
   }
 
   async findByCondition(condition: object): Promise<User> {
-    return this.user.findOne(condition);
+    return this.user.findOne({ ...condition, relations: ['tripRecord'] });
   }
 
   async delRefreshToken(id) {
