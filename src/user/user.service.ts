@@ -18,7 +18,6 @@ import {
   ChangePasswordDTO,
   ChangePasswordOutput,
 } from './dtos/changePassword.dto';
-import { hits } from 'memory-cache';
 
 @Injectable()
 export class UserService {

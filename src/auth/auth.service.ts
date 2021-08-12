@@ -14,8 +14,6 @@ import { User } from 'src/user/entities/user.entity';
 import { FindPasswordDTO, FindPasswordOutput } from './dtos/findPassword.dto';
 import { TempTokenDTO, TempTokenOutput } from './dtos/tempToken.dto';
 import * as redis from 'redis';
-import { PhoneNumber } from 'libphonenumber-js';
-import { tsConstructSignatureDeclaration } from '@babel/types';
 
 const client = redis.createClient();
 client.on('connect', () => {

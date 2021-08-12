@@ -23,10 +23,7 @@ export class ApiService {
     @InjectRepository(TripDetail)
     private readonly tripDetail: Repository<TripDetail>,
     @InjectRepository(Image) private readonly image: Repository<Image>,
-  ) {
-    // this.getCommonDetail();
-    // this.getCommonDetail();
-  }
+  ) {}
 
   async getCommonDetail() {
     const tempDB = await this.location.find({
