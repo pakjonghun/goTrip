@@ -8,9 +8,10 @@ import {
 } from 'class-validator';
 import { CommonOutput } from 'src/common/dtos/common.dto';
 import { Course } from '../entities/course.entity';
-import { AREA_CODES, CATEGORIES } from '../trip.constants';
+import { AREA_CODES } from '../trip.constants';
 
 export class GetCourseInput {
+  @IsOptional()
   @IsDateString()
   startDate: Date;
 
